@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Log Food</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Tracker</title>
+    <link rel="stylesheet" href="calorie_tracker.css">
+</head>
+<body>
+    <h2>Log Food Entry</h2>
+    <form id="logFoodForm">
+        <label for="food_name">Food Name:</label>
+        <input type="text" id="food_name" placeholder="Enter food name..." />
+        <div id="suggestions"></div>
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" name="quantity" step="0.1" required>
+        <button type="submit">Log Food</button>
+    </form>
+    
+    <div id="result"></div>
+    
+
+    <script src="calorie_tracker.js"></script>
+</body>
+</html>

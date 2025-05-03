@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gym Buddy - BMI Analyzer</title>
+</head>
+<body>
+  <h1>BMI Analyzer</h1>
+  <form id="bmiForm">
+    <input type="number" name="weight" placeholder="Weight (kg)" required><br>
+    <input type="number" name="height" placeholder="Height (cm)" required><br>
+    <input type="number" name="age" placeholder="Age" required><br>
+    <select name="gender" required>
+      <option value="" disabled selected>Select gender</option>
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select><br>
+    <select name="activity" required>
+      <option value="" disabled selected>Activity level</option>
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select><br>
+    <select name="goal" required>
+      <option value="" disabled selected>Goal</option>
+      <option value="lose">Lose Weight</option>
+      <option value="maintain">Maintain</option>
+      <option value="gain">Gain Weight</option>
+    </select><br>
+    <input type="number" name="target_weight" placeholder="Target Weight (kg)" required><br>
+    <input type="number" name="target_duration" placeholder="Duration (months)" required><br>
+    <button type="submit">Analyze</button>
+  </form>
+  <a href="progress.html">PROGRESS</a>
+  <a href="workout.html">WORKOUT PROGRESS</a>
+  <a href="calorie_tracker.html">Calories</a>
+  <div id="result"></div>
+  <script src="bmi.js"></script>
+
+
+</body>
+</html>
