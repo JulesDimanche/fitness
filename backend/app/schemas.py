@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List,Optional
 from datetime import datetime
+from datetime import date
 
 class UserCreate(BaseModel):
     username: str
@@ -30,3 +31,12 @@ class WorkoutSessionCreate(BaseModel):
 class LogFoodRequest(BaseModel):
     food_name: str
     quantity: float
+    consumed_at: Optional[date] = None
+    
+class FoodSuggestion(BaseModel):
+    food_item: str
+    serving_description: str
+    serving_grams: float
+
+    class Config:
+        orm_mode = True

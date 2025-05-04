@@ -18,6 +18,8 @@ from app.auth import create_access_token
 from app.auth import hash_password
 from app.models import WorkoutSession, WorkoutExercise, WorkoutSet
 from app.food_db import FoodSessionLocal
+from app.schemas import FoodSuggestion
+from fastapi import Query
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -448,21 +450,26 @@ def log_food(request: LogFoodRequest,current_user: User = Depends(get_current_us
             raise HTTPException(status_code=404, detail="Food not found")
 
         # 2. Multiply nutrients by quantity
-        calories = food.calories * request.quantity
-        protein = food.protein * request.quantity
-        fat = food.fat * request.quantity
-        carbs = food.carbs * request.quantity
+        grams = request.quantity * food.serving_grams
+        calories = round(food.calories * request.quantity,2)
+        protein = round(food.protein * request.quantity,2)
+        fat = round(food.fat * request.quantity,2)
+        carbs = round(food.carbs * request.quantity,2)
+
+        consumed_at = request.consumed_at or date.today()
 
         # 3. Insert into gymbuddy.db
         new_entry = UserConsumption(
             user_id=current_user.id,
             food_name=food.food_item,
+            quantity=request.quantity,
+            grams=grams,
             calories=calories,
             protein=protein,
             fat=fat,
             carbs=carbs,
-            quantity=request.quantity,
-            consumed_at=datetime.utcnow()
+            consumed_at=consumed_at
+
         )
         gym_session.add(new_entry)
         gym_session.commit()
@@ -478,7 +485,7 @@ def log_food(request: LogFoodRequest,current_user: User = Depends(get_current_us
         food_session.close()
         gym_session.close()
 
-@app.get("/food-suggestions")
+@app.get("/food-suggestions", response_model=List[FoodSuggestion])
 def get_food_suggestions(query: str, db: Session = Depends(get_food_db)):
     if len(query) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters long")
@@ -489,3 +496,21 @@ def get_food_suggestions(query: str, db: Session = Depends(get_food_db)):
         raise HTTPException(status_code=404, detail="No food items found")
     
     return foods
+
+@app.get("/food-log")
+def get_food_log(date:str, 
+                 db: Session = Depends(get_db), 
+                 user: User = Depends(get_current_user)):
+    date_obj = datetime.datetime.strptime(date, '%Y-%m-%d').date()
+    logs = db.query(UserConsumption).filter(
+        UserConsumption.user_id == user.id,
+        UserConsumption.date == date_obj
+    ).all()
+
+    return [{
+        "food_name": log.food_name,
+        "quantity": round(log.quantity, 2),
+        "grams": round(log.grams, 2),
+        "calories": round(log.calories, 2),
+        "protein": round(log.protein, 2),
+    } for log in logs]

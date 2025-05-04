@@ -92,11 +92,12 @@ class UserConsumption(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'))  # assuming you have a 'user' table
     food_name = Column(String, nullable=False)
+    quantity = Column(Float, nullable=False, default=1.0)
+    grams = Column(Float, nullable=True)
     calories = Column(Float, nullable=False)
     protein = Column(Float, nullable=False)
     fat = Column(Float, nullable=False)
     carbs = Column(Float, nullable=False)
-    quantity = Column(Float, nullable=False, default=1.0)
     consumed_at = Column(DateTime, default=datetime.utcnow)
 
 class FoodItem(Base):
@@ -104,6 +105,8 @@ class FoodItem(Base):
 
     id = Column(Integer, primary_key=True)
     food_item = Column(String, unique=True)
+    serving_description = Column(String)
+    serving_grams = Column(Float)   
     calories = Column(Float)
     protein = Column(Float)
     fat = Column(Float)
