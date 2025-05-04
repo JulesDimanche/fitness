@@ -13,12 +13,45 @@
         <label for="food_name">Food Name:</label>
         <input type="text" id="food_name" placeholder="Enter food name..." />
         <div id="suggestions"></div>
+    
+        <label for="input_type">Choose input type:</label>
+        <select id="input_type">
+            <option value="quantity">Quantity</option>
+            <option value="grams">Grams</option>
+        </select>
+
         <label for="quantity">Quantity:</label>
-        <input type="number" id="quantity" name="quantity" step="0.1" required>
+        <input type="number" id="quantity" name="quantity" step="0.1" style="display: block;" />
+
+        <label for="grams">Grams:</label>
+        <input type="number" id="grams" name="grams" step="any" style="display: none;" />
+
+    
+        <div id="serving_info" style="margin-top: 8px; font-style: italic;"></div>
+        <div id="total_grams_info"></div>
+
+        <label for="use_today">
+            <input type="checkbox" id="use_today" checked />
+                Use today's date
+        </label>
+
+        <label for="custom_date">Or choose a custom date:</label>
+        <input type="date" id="custom_date" />
+
         <button type="submit">Log Food</button>
+
+        <label for="view_date">View Logs For:</label>
+            <input type="date" id="view_date" />
+
+            <button id="load_logs">Load Food Logs</button>
+
+            <div id="food_logs_display" style="margin-top: 10px;"></div>
+
     </form>
     
     <div id="result"></div>
+    
+    
     
 
     <script src="calorie_tracker.js"></script>
