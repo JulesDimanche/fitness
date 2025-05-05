@@ -15,3 +15,9 @@
   .suggestion-item:hover {
       background-color: #f0f0f0;
   }
+  .log-item {
+    margin-bottom: 8px;
+}
+.log-item button {
+    margin-left: 5px;
+}

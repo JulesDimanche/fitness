@@ -40,3 +40,6 @@ class FoodSuggestion(BaseModel):
 
     class Config:
         orm_mode = True
+
+class UpdateLogRequest(BaseModel):
+    quantity: float

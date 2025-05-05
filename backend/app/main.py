@@ -20,6 +20,7 @@ from app.models import WorkoutSession, WorkoutExercise, WorkoutSet
 from app.food_db import FoodSessionLocal
 from app.schemas import FoodSuggestion
 from fastapi import Query
+from sqlalchemy import cast, Date
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -439,7 +440,7 @@ from app.food_db import FoodSessionLocal
 food_session_local = FoodSessionLocal
 
 @app.post("/log-food")
-def log_food(request: LogFoodRequest,current_user: User = Depends(get_current_user)):
+def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_user)):
     food_session: Session = food_session_local()
     gym_session: Session = SessionLocal()
 
@@ -451,10 +452,10 @@ def log_food(request: LogFoodRequest,current_user: User = Depends(get_current_us
 
         # 2. Multiply nutrients by quantity
         grams = request.quantity * food.serving_grams
-        calories = round(food.calories * request.quantity,2)
-        protein = round(food.protein * request.quantity,2)
-        fat = round(food.fat * request.quantity,2)
-        carbs = round(food.carbs * request.quantity,2)
+        calories = round(food.calories * request.quantity, 2)
+        protein = round(food.protein * request.quantity, 2)
+        fat = round(food.fat * request.quantity, 2)
+        carbs = round(food.carbs * request.quantity, 2)
 
         consumed_at = request.consumed_at or date.today()
 
@@ -469,12 +470,24 @@ def log_food(request: LogFoodRequest,current_user: User = Depends(get_current_us
             fat=fat,
             carbs=carbs,
             consumed_at=consumed_at
-
         )
         gym_session.add(new_entry)
         gym_session.commit()
 
-        return {"message": "Food logged successfully"}
+        # Return the new entry data so frontend can immediately display it
+        return {
+            "message": "Food logged successfully",
+            "food_log": {
+                "food_name": new_entry.food_name,
+                "quantity": new_entry.quantity,
+                "grams": new_entry.grams,
+                "calories": new_entry.calories,
+                "protein": new_entry.protein,
+                "fat": new_entry.fat,
+                "carbs": new_entry.carbs,
+                "consumed_at": new_entry.consumed_at.isoformat()
+            }
+        }
 
     except HTTPException as e:
         raise e
@@ -484,6 +497,7 @@ def log_food(request: LogFoodRequest,current_user: User = Depends(get_current_us
     finally:
         food_session.close()
         gym_session.close()
+
 
 @app.get("/food-suggestions", response_model=List[FoodSuggestion])
 def get_food_suggestions(query: str, db: Session = Depends(get_food_db)):
@@ -498,19 +512,34 @@ def get_food_suggestions(query: str, db: Session = Depends(get_food_db)):
     return foods
 
 @app.get("/food-log")
-def get_food_log(date:str, 
-                 db: Session = Depends(get_db), 
-                 user: User = Depends(get_current_user)):
-    date_obj = datetime.datetime.strptime(date, '%Y-%m-%d').date()
+def get_food_log(
+    log_date: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        day_start = datetime.strptime(log_date, "%Y-%m-%d")
+        day_end = day_start + timedelta(days=1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
     logs = db.query(UserConsumption).filter(
-        UserConsumption.user_id == user.id,
-        UserConsumption.date == date_obj
+        UserConsumption.user_id == current_user.id,
+        UserConsumption.consumed_at >= day_start,
+        UserConsumption.consumed_at < day_end
     ).all()
 
-    return [{
-        "food_name": log.food_name,
-        "quantity": round(log.quantity, 2),
-        "grams": round(log.grams, 2),
-        "calories": round(log.calories, 2),
-        "protein": round(log.protein, 2),
-    } for log in logs]
+    return[
+        {
+            "food_name": log.food_name,
+            "quantity": log.quantity,
+            "grams": log.grams,
+            "calories": log.calories,
+            "protein": log.protein,
+            "fat": log.fat,
+            "carbs": log.carbs,
+            "consumed_at": log.consumed_at.isoformat()  # Convert date to string
+        }
+        for log in logs
+    ]
+    
