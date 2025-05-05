@@ -32,6 +32,7 @@ class LogFoodRequest(BaseModel):
     food_name: str
     quantity: float
     consumed_at: Optional[date] = None
+    meal_time: str
     
 class FoodSuggestion(BaseModel):
     food_item: str
@@ -41,5 +42,7 @@ class FoodSuggestion(BaseModel):
     class Config:
         orm_mode = True
 
-class UpdateLogRequest(BaseModel):
-    quantity: float
+class UpdateFoodRequest(BaseModel):
+    quantity: Optional[float]
+    grams: Optional[float]
+    meal_time: Optional[str]

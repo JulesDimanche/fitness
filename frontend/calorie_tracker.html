@@ -19,6 +19,15 @@
             <option value="quantity">Quantity</option>
             <option value="grams">Grams</option>
         </select>
+        <label for="meal_time">Meal Time:</label>
+            <select id="meal_time" name="meal_time">
+                <option value="Breakfast">Breakfast</option>
+                <option value="Morning Snack">Morning Snack</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Evening Snack">Evening Snack</option>
+                <option value="Dinner">Dinner</option>
+            </select>
+
 
         <label for="quantity">Quantity:</label>
         <input type="number" id="quantity" name="quantity" step="0.1" style="display: block;" />
@@ -46,6 +55,7 @@
             <button id="load_logs">Load Food Logs</button>
 
             <div id="food_logs_display" style="margin-top: 10px;"></div>
+
 
     </form>
     

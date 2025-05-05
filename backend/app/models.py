@@ -92,6 +92,7 @@ class UserConsumption(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'))  # assuming you have a 'user' table
     food_name = Column(String, nullable=False)
+    meal_time = Column(String, nullable=True)
     quantity = Column(Float, nullable=False, default=1.0)
     grams = Column(Float, nullable=True)
     calories = Column(Float, nullable=False)

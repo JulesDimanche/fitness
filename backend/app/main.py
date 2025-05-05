@@ -18,7 +18,7 @@ from app.auth import create_access_token
 from app.auth import hash_password
 from app.models import WorkoutSession, WorkoutExercise, WorkoutSet
 from app.food_db import FoodSessionLocal
-from app.schemas import FoodSuggestion
+from app.schemas import FoodSuggestion,UpdateFoodRequest
 from fastapi import Query
 from sqlalchemy import cast, Date
 
@@ -435,7 +435,6 @@ async def get_previous_exercise(
 
 from app.schemas import LogFoodRequest
 from app.models import UserConsumption, FoodItem, Base
-from app.food_db import FoodSessionLocal
 
 food_session_local = FoodSessionLocal
 
@@ -463,6 +462,7 @@ def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_u
         new_entry = UserConsumption(
             user_id=current_user.id,
             food_name=food.food_item,
+            meal_time=request.meal_time,
             quantity=request.quantity,
             grams=grams,
             calories=calories,

@@ -127,6 +127,7 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
     console.log("Form submitted!"); 
     const resultText = document.getElementById("result");
     const food_name = foodInput.value.trim();
+    const mealTime = document.getElementById("meal_time").value;
 
     if (!food_name) {
         resultText.textContent = "❌ Please select a food item";
@@ -150,7 +151,6 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
     const dateToUse = useTodayCheckbox.checked 
         ? new Date().toISOString().split("T")[0] 
         : customDateInput.value;
-
     try {
         const response = await fetch("http://localhost:8000/log-food", {
             method: "POST",
@@ -161,9 +161,10 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
             body: JSON.stringify({
                 food_name: food_name,
                 quantity: quantity,
-                consumed_at: dateToUse
+                consumed_at: dateToUse,
+                meal_time: mealTime
             })
-        });
+            });
 
         const result = await response.json();
         resultText.textContent = response.ok
@@ -178,6 +179,9 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
             servingInfo.textContent = "";
             totalGramsInfo.textContent = "";
             selectedServingGrams = null;
+            
+            document.querySelector("#logFoodForm button[type='submit']").textContent = "Log Food";
+
 
             // Set viewDateInput to same date and auto-refresh logs
             console.log("View Date Input: ", viewDateInput.value); // Check if the date is correct
@@ -242,17 +246,20 @@ function renderFoodLogs(logs) {
 
     const totalCalories = logs.reduce((sum, log) => sum + log.calories, 0);
     const totalProtein = logs.reduce((sum, log) => sum + log.protein, 0);
+    const totalFat = logs.reduce((sum, log) => sum + log.fat, 0);
 
     foodLogsDisplay.innerHTML = `
         <div class="log-summary">
             <p>Total Calories: ${totalCalories.toFixed(1)}</p>
             <p>Total Protein: ${totalProtein.toFixed(1)}g</p>
+            <p>Total Fat: ${totalFat.toFixed(1)}g</p>
         </div>
         <table class="log-table">
             <thead>
                 <tr>
                     <th>Food</th>
                     <th>Quantity</th>
+                    <th>Grams</th>
                     <th>Calories</th>
                     <th>Protein</th>
                     <th>Carbs</th>
@@ -264,6 +271,7 @@ function renderFoodLogs(logs) {
                     <tr>
                         <td>${log.food_name}</td>
                         <td>${log.quantity.toFixed(1)}</td>
+                        <td>${log.grams.toFixed(1)}</td>
                         <td>${log.calories.toFixed(1)}</td>
                         <td>${log.protein.toFixed(1)}g</td>
                         <td>${log.carbs.toFixed(1)}g</td>
@@ -272,8 +280,9 @@ function renderFoodLogs(logs) {
                 `).join("")}
             </tbody>
         </table>
-    `;
+    `;     
 }
+
 async function loadAndRenderLogs(date) {
     foodLogsDisplay.innerHTML = "⏳ Loading...";
     try {
@@ -296,7 +305,6 @@ async function loadAndRenderLogs(date) {
         foodLogsDisplay.innerHTML = `❌ Error: ${err.message}`;
     }
 }
-
 
 // Handle "Use Today's Date" checkbox
 useTodayCheckbox.addEventListener("change", function () {
