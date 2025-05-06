@@ -479,6 +479,7 @@ def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_u
             "message": "Food logged successfully",
             "food_log": {
                 "food_name": new_entry.food_name,
+                "meal_time":new_entry.meal_time,
                 "quantity": new_entry.quantity,
                 "grams": new_entry.grams,
                 "calories": new_entry.calories,
@@ -532,6 +533,7 @@ def get_food_log(
     return[
         {
             "food_name": log.food_name,
+            "meal_time":log.meal_time,
             "quantity": log.quantity,
             "grams": log.grams,
             "calories": log.calories,

@@ -244,44 +244,101 @@ function renderFoodLogs(logs) {
         return;
     }
 
+    const mealOrder = ["Breakfast", "Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Evening Snack"];
+    const grouped = {};
+
+    // Group by meal time
+    logs.forEach(log => {
+        const meal = log.meal_time || "Other";
+        if (!grouped[meal]) grouped[meal] = [];
+        grouped[meal].push(log);
+    });
+
+    // Calculate totals
     const totalCalories = logs.reduce((sum, log) => sum + log.calories, 0);
     const totalProtein = logs.reduce((sum, log) => sum + log.protein, 0);
     const totalFat = logs.reduce((sum, log) => sum + log.fat, 0);
 
-    foodLogsDisplay.innerHTML = `
+    let html = `
         <div class="log-summary">
             <p>Total Calories: ${totalCalories.toFixed(1)}</p>
             <p>Total Protein: ${totalProtein.toFixed(1)}g</p>
             <p>Total Fat: ${totalFat.toFixed(1)}g</p>
         </div>
-        <table class="log-table">
-            <thead>
-                <tr>
-                    <th>Food</th>
-                    <th>Quantity</th>
-                    <th>Grams</th>
-                    <th>Calories</th>
-                    <th>Protein</th>
-                    <th>Carbs</th>
-                    <th>Fat</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${logs.map(log => `
+    `;
+
+    // Render meals in correct order
+    mealOrder.forEach(meal => {
+        if (grouped[meal]) {
+            html += `<h3>${meal}</h3>`;
+            html += `
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Food</th>
+                            <th>Quantity</th>
+                            <th>Grams</th>
+                            <th>Calories</th>
+                            <th>Protein</th>
+                            <th>Carbs</th>
+                            <th>Fat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${grouped[meal].map(log => `
+                            <tr>
+                                <td>${log.food_name}</td>
+                                <td>${log.quantity.toFixed(1)}</td>
+                                <td>${log.grams.toFixed(1)}</td>
+                                <td>${log.calories.toFixed(1)}</td>
+                                <td>${log.protein.toFixed(1)}g</td>
+                                <td>${log.carbs.toFixed(1)}g</td>
+                                <td>${log.fat.toFixed(1)}g</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            `;
+        }
+    });
+
+    // Optionally render "Other" group
+    if (grouped["Other"]) {
+        html += `<h3>Other</h3>`;
+        html += `
+            <table class="log-table">
+                <thead>
                     <tr>
-                        <td>${log.food_name}</td>
-                        <td>${log.quantity.toFixed(1)}</td>
-                        <td>${log.grams.toFixed(1)}</td>
-                        <td>${log.calories.toFixed(1)}</td>
-                        <td>${log.protein.toFixed(1)}g</td>
-                        <td>${log.carbs.toFixed(1)}g</td>
-                        <td>${log.fat.toFixed(1)}g</td>
+                        <th>Food</th>
+                        <th>Quantity</th>
+                        <th>Grams</th>
+                        <th>Calories</th>
+                        <th>Protein</th>
+                        <th>Carbs</th>
+                        <th>Fat</th>
                     </tr>
-                `).join("")}
-            </tbody>
-        </table>
-    `;     
+                </thead>
+                <tbody>
+                    ${grouped["Other"].map(log => `
+                        <tr>
+                            <td>${log.food_name}</td>
+                            <td>${log.quantity.toFixed(1)}</td>
+                            <td>${log.grams.toFixed(1)}</td>
+                            <td>${log.calories.toFixed(1)}</td>
+                            <td>${log.protein.toFixed(1)}g</td>
+                            <td>${log.carbs.toFixed(1)}g</td>
+                            <td>${log.fat.toFixed(1)}g</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        `;
+    }
+
+    foodLogsDisplay.innerHTML = html;
 }
+
+
 
 async function loadAndRenderLogs(date) {
     foodLogsDisplay.innerHTML = "⏳ Loading...";
