@@ -42,7 +42,8 @@ class FoodSuggestion(BaseModel):
     class Config:
         orm_mode = True
 
-class UpdateFoodRequest(BaseModel):
+class FoodLogUpdate(BaseModel):
+    food_name: Optional[str]
     quantity: Optional[float]
     grams: Optional[float]
-    meal_time: Optional[str]
+    

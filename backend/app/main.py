@@ -18,7 +18,7 @@ from app.auth import create_access_token
 from app.auth import hash_password
 from app.models import WorkoutSession, WorkoutExercise, WorkoutSet
 from app.food_db import FoodSessionLocal
-from app.schemas import FoodSuggestion,UpdateFoodRequest
+from app.schemas import FoodSuggestion,FoodLogUpdate
 from fastapi import Query
 from sqlalchemy import cast, Date
 
@@ -478,6 +478,7 @@ def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_u
         return {
             "message": "Food logged successfully",
             "food_log": {
+                "id": new_entry.id,
                 "food_name": new_entry.food_name,
                 "meal_time":new_entry.meal_time,
                 "quantity": new_entry.quantity,
@@ -532,6 +533,7 @@ def get_food_log(
 
     return[
         {
+            "id": log.id, 
             "food_name": log.food_name,
             "meal_time":log.meal_time,
             "quantity": log.quantity,
@@ -545,3 +547,36 @@ def get_food_log(
         for log in logs
     ]
     
+@app.put("/update-food-log/{log_id}")
+def update_food_log(log_id: int, update: FoodLogUpdate, db: Session = Depends(get_db),food_db: Session = Depends(get_food_db),
+current_user: User = Depends(get_current_user)):
+    food_log = db.query(UserConsumption).filter(UserConsumption.id == log_id, UserConsumption.user_id == current_user.id).first()
+
+    if not food_log:
+        raise HTTPException(status_code=404, detail="Food log not found.")
+
+    if update.food_name is not None:
+        food_log.food_name = update.food_name
+    if update.quantity is not None:
+        food_log.quantity = update.quantity
+
+        food_item = food_db.query(FoodItem).filter(FoodItem.food_item == food_log.food_name).first()
+        if not food_item:
+            raise HTTPException(status_code=404, detail="Food item not found in food database.")
+
+        # Recalculate nutrients
+        food_log.grams = round(update.quantity * food_item.serving_grams, 2)
+        food_log.calories = round(update.quantity * food_item.calories, 2)
+        food_log.protein = round(update.quantity * food_item.protein, 2)
+        food_log.fat = round(update.quantity * food_item.fat, 2)
+        food_log.carbs = round(update.quantity * food_item.carbs, 2)
+
+    db.commit()
+    db.refresh(food_log)
+
+    return {"message": "Food log updated successfully", "log": {
+        "id": food_log.id,
+        "food_name": food_log.food_name,
+        "quantity": food_log.quantity,
+        "grams": food_log.grams,
+    }}

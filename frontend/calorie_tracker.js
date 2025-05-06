@@ -282,18 +282,20 @@ function renderFoodLogs(logs) {
                             <th>Protein</th>
                             <th>Carbs</th>
                             <th>Fat</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${grouped[meal].map(log => `
-                            <tr>
-                                <td>${log.food_name}</td>
-                                <td>${log.quantity.toFixed(1)}</td>
-                                <td>${log.grams.toFixed(1)}</td>
+                            <tr id="log-row-${log.id}">
+                                <td class="editable" data-key="food_name">${log.food_name}</td>
+                                <td class="editable" data-key="quantity">${log.quantity.toFixed(1)}</td>
+                                <td class="editable" data-key="grams">${log.grams.toFixed(1)}</td>
                                 <td>${log.calories.toFixed(1)}</td>
                                 <td>${log.protein.toFixed(1)}g</td>
                                 <td>${log.carbs.toFixed(1)}g</td>
                                 <td>${log.fat.toFixed(1)}g</td>
+                                <td><button class="edit-btn">Edit</button></td>
                             </tr>
                         `).join("")}
                     </tbody>
@@ -316,18 +318,20 @@ function renderFoodLogs(logs) {
                         <th>Protein</th>
                         <th>Carbs</th>
                         <th>Fat</th>
+                        <th>Actions</th> 
                     </tr>
                 </thead>
                 <tbody>
                     ${grouped["Other"].map(log => `
-                        <tr>
-                            <td>${log.food_name}</td>
-                            <td>${log.quantity.toFixed(1)}</td>
-                            <td>${log.grams.toFixed(1)}</td>
+                            <tr id="log-row-${log.id}">
+                            <td class="editable" data-key="food_name">${log.food_name}</td>
+                            <td class="editable" data-key="quantity">${log.quantity.toFixed(1)}</td>
+                            <td class="editable" data-key="grams">${log.grams.toFixed(1)}</td>
                             <td>${log.calories.toFixed(1)}</td>
                             <td>${log.protein.toFixed(1)}g</td>
                             <td>${log.carbs.toFixed(1)}g</td>
                             <td>${log.fat.toFixed(1)}g</td>
+                            <td><button class="edit-btn">Edit</button></td>
                         </tr>
                     `).join("")}
                 </tbody>
@@ -336,6 +340,73 @@ function renderFoodLogs(logs) {
     }
 
     foodLogsDisplay.innerHTML = html;
+
+    // Add edit functionality to each button
+    document.querySelectorAll(".edit-btn").forEach(button => {
+        button.addEventListener("click", function () {
+            const row = this.closest("tr");
+        console.log("Row ID: ", row.id);  // Check the actual ID here
+
+        if (!row.id) {
+            console.error("No row ID found!");
+            return;
+        }
+        const logId = row.id.split('-')[2];  // Get the log ID from the row
+        if (!logId) {
+            console.error("Failed to extract log ID");
+            return;
+        }  // Debug log
+
+            if (!logId) {
+                console.error("Error: Log ID is undefined or missing.");
+                alert("Error: Unable to retrieve log ID.");
+                return;
+            }
+            // Toggle Edit/Save
+            if (this.textContent === "Edit") {
+                row.querySelectorAll(".editable").forEach(cell => {
+                    const value = cell.textContent;
+                    const key = cell.getAttribute("data-key");
+                    cell.innerHTML = `<input type="text" value="${value}" data-key="${key}">`;
+                });
+                this.textContent = "Save";
+            } else {
+                // Collect edited values
+                const updatedData = {};
+                row.querySelectorAll("input").forEach(input => {
+                    const key = input.getAttribute("data-key");
+                    updatedData[key] = input.value;
+                });
+
+                console.log("Updated Data: ", updatedData);  // Debug log
+
+                // Send the updated data to the backend
+                fetch(`http://localhost:8000/update-food-log/${logId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updatedData)
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok) {
+                        // Reload logs after saving
+                        const viewDate = viewDateInput.value;
+                        loadAndRenderLogs(viewDate);
+                    } else {
+                        alert("❌ Update failed: " + (data.detail || "Unknown error"));
+                    }
+                })
+                .catch(err => {
+                    alert("❌ Network error while updating");
+                });
+
+                this.textContent = "Edit";  // Reset button to Edit after saving
+            }
+        });
+    });
 }
 
 
@@ -362,6 +433,56 @@ async function loadAndRenderLogs(date) {
         foodLogsDisplay.innerHTML = `❌ Error: ${err.message}`;
     }
 }
+
+function editFoodLog(logId) {
+    const row = document.getElementById(`log-row-${logId}`);
+    const cells = row.querySelectorAll("td");
+
+    // Get current values
+    const food = cells[0].textContent;
+    const quantity = parseFloat(cells[1].textContent);
+    const grams = parseFloat(cells[2].textContent);
+
+    // Replace with input fields
+    cells[0].innerHTML = `<input type="text" value="${food}" id="edit-food-${logId}">`;
+    cells[1].innerHTML = `<input type="number" value="${quantity}" step="0.1" id="edit-qty-${logId}">`;
+    cells[2].innerHTML = `<input type="number" value="${grams}" step="0.1" id="edit-grams-${logId}">`;
+
+    // Keep other cells (calories, protein, carbs, fat) as-is for now
+
+    // Replace Edit button with Save
+    cells[7].innerHTML = `<button onclick="saveFoodLog(${logId})">Save</button>`;
+}
+
+async function saveFoodLog(logId) {
+    const food = document.getElementById(`edit-food-${logId}`).value;
+    const quantity = parseFloat(document.getElementById(`edit-qty-${logId}`).value);
+    const grams = parseFloat(document.getElementById(`edit-grams-${logId}`).value);
+
+    console.log("Saving log", logId, food, quantity, grams);
+
+    // TODO: send PATCH or PUT request to your server
+    // Example:
+    await fetch(`http://localhost:8000/update-food-log/${logId}`, {
+        method: "PUT",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            food_name: food,
+            quantity: quantity,
+            grams: grams
+        })
+    });
+    
+
+    // Reload log after saving
+    const viewDate = document.getElementById("view_date").value;
+    await loadAndRenderLogs(viewDate);
+}
+
+
 
 // Handle "Use Today's Date" checkbox
 useTodayCheckbox.addEventListener("change", function () {
