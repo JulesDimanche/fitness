@@ -570,6 +570,17 @@ current_user: User = Depends(get_current_user)):
         food_log.protein = round(update.quantity * food_item.protein, 2)
         food_log.fat = round(update.quantity * food_item.fat, 2)
         food_log.carbs = round(update.quantity * food_item.carbs, 2)
+    if update.grams is not None:
+        food_log.grams = update.grams
+        food_item = food_db.query(FoodItem).filter(FoodItem.food_item == food_log.food_name).first()
+        if not food_item:
+            raise HTTPException(status_code=404, detail="Food item not found in food database.")
+        food_log.quantity = round(update.grams / food_item.serving_grams, 2)
+        food_log.calories = round(update.grams / food_item.serving_grams * food_item.calories, 2)
+        food_log.protein = round(update.grams / food_item.serving_grams * food_item.protein, 2)
+        food_log.fat = round(update.grams / food_item.serving_grams * food_item.fat, 2)
+        food_log.carbs = round(update.grams / food_item.serving_grams * food_item.carbs, 2)
+
 
     db.commit()
     db.refresh(food_log)
