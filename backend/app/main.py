@@ -580,3 +580,22 @@ current_user: User = Depends(get_current_user)):
         "quantity": food_log.quantity,
         "grams": food_log.grams,
     }}
+
+@app.delete("/delete-food-log/{log_id}")
+def delete_food_log(
+    log_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    food_log = db.query(UserConsumption).filter(
+        UserConsumption.id == log_id,
+        UserConsumption.user_id == current_user.id
+    ).first()
+
+    if not food_log:
+        raise HTTPException(status_code=404, detail="Food log not found.")
+
+    db.delete(food_log)
+    db.commit()
+
+    return {"message": "Food log deleted successfully"}

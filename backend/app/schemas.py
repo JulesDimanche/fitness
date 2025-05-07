@@ -31,7 +31,7 @@ class WorkoutSessionCreate(BaseModel):
 class LogFoodRequest(BaseModel):
     food_name: str
     quantity: float
-    consumed_at: Optional[date] = None
+    consumed_at: Optional[datetime] = None
     meal_time: str
     
 class FoodSuggestion(BaseModel):

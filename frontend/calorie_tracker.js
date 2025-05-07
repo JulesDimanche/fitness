@@ -125,6 +125,8 @@ gramsInput.addEventListener("input", () => {
 document.getElementById("logFoodForm").addEventListener("submit", async function (e) {
     e.preventDefault();
     console.log("Form submitted!"); 
+    const isEditMode = document.querySelector('.edit-btn.save-mode');
+    if (isEditMode) return;
     const resultText = document.getElementById("result");
     const food_name = foodInput.value.trim();
     const mealTime = document.getElementById("meal_time").value;
@@ -296,6 +298,7 @@ function renderFoodLogs(logs) {
                                 <td>${log.carbs.toFixed(1)}g</td>
                                 <td>${log.fat.toFixed(1)}g</td>
                                 <td><button class="edit-btn">Edit</button></td>
+                                <td><button class="delete-btn">Delete</button></td>
                             </tr>
                         `).join("")}
                     </tbody>
@@ -332,6 +335,7 @@ function renderFoodLogs(logs) {
                             <td>${log.carbs.toFixed(1)}g</td>
                             <td>${log.fat.toFixed(1)}g</td>
                             <td><button class="edit-btn">Edit</button></td>
+                            <td><button class="delete-btn">Delete</button></td>
                         </tr>
                     `).join("")}
                 </tbody>
@@ -407,9 +411,43 @@ function renderFoodLogs(logs) {
             }
         });
     });
+    
+    
+    // Add delete functionality
+    document.querySelectorAll(".delete-btn").forEach(button => {
+        button.addEventListener("click", function() {
+            const row = this.closest("tr");
+            const logId = row.id.split('-')[2];
+
+            if (!logId) {
+                alert("❌ Failed to identify log ID for deletion.");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to delete this food log?")) return;
+
+            fetch(`http://localhost:8000/delete-food-log/${logId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok) {
+                    alert("✅ Food log deleted successfully");
+                    const viewDate = viewDateInput.value;
+                    loadAndRenderLogs(viewDate);
+                } else {
+                    alert("❌ Deletion failed: " + (data.detail || "Unknown error"));
+                }
+            })
+            .catch(err => {
+                alert("❌ Network error while deleting");
+            });
+        });
+    });
 }
-
-
 
 async function loadAndRenderLogs(date) {
     foodLogsDisplay.innerHTML = "⏳ Loading...";
