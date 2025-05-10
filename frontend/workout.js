@@ -1,37 +1,93 @@
+// workout.js - Complete Workout Tracker Application
+document.addEventListener('DOMContentLoaded', function() {
+    initWorkoutTracker();
+});
+
+// Global variables
 let exerciseCount = 0;
 const token = localStorage.getItem("token");
-const exercisesContainer = document.getElementById("exercises-container");
 
-// Initialize with one exercise
-addExercise();
+// Main initialization function
+function initWorkoutTracker() {
+    // Check authentication
+    if (!token) {
+        redirectToLogin();
+        return;
+    }
 
-// Add button to add new exercises
-const addExerciseBtn = document.createElement('button');
-addExerciseBtn.type = 'button';
-addExerciseBtn.classList.add('btn', 'add-exercise-btn');
-addExerciseBtn.textContent = '+ Add Exercise';
-addExerciseBtn.addEventListener('click', addExercise);
-document.querySelector('form').insertBefore(addExerciseBtn, exercisesContainer);
+    // Create first exercise
+    addExercise();
 
+    // Add exercise button
+    const addExerciseBtn = createButton('+ Add Exercise', ['btn', 'add-exercise-btn']);
+    addExerciseBtn.addEventListener('click', addExercise);
+    document.querySelector('form').insertBefore(
+        addExerciseBtn, 
+        document.getElementById('exercises-container')
+    );
+
+    // Form submission handler
+    document.getElementById("workout-form").addEventListener("submit", handleFormSubmit);
+}
+
+// Exercise creation and management
 function addExercise() {
+    const exerciseDiv = createExerciseContainer();
+    const nameGroup = createExerciseNameInput(exerciseDiv.id);
+    const setsContainer = createSetsContainer();
+
+    exerciseDiv.appendChild(nameGroup);
+    exerciseDiv.appendChild(setsContainer);
+    exerciseDiv.appendChild(createAddSetButton(exerciseDiv.id, setsContainer));
+
+    document.getElementById('exercises-container').appendChild(exerciseDiv);
+}
+
+function createExerciseContainer() {
     const exerciseDiv = document.createElement('div');
     exerciseDiv.classList.add('exercise');
     exerciseDiv.id = `exercise-${exerciseCount++}`;
+    return exerciseDiv;
+}
 
-    // Exercise name input with autocomplete
-    const exerciseNameInput = document.createElement('input');
-    exerciseNameInput.type = 'text';
-    exerciseNameInput.name = 'exercise_name';
-    exerciseNameInput.placeholder = 'Exercise Name (e.g., Bench Press)';
-    exerciseNameInput.autocomplete = 'off';
-    exerciseNameInput.classList.add('exercise-name');
-    exerciseDiv.appendChild(exerciseNameInput);
+function createExerciseNameInput(exerciseId) {
+    const nameGroup = document.createElement('div');
+    nameGroup.classList.add('exercise-name-group');
 
-    // Container for sets
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.name = 'exercise_name';
+    nameInput.placeholder = 'Search for an exercise...';
+    nameInput.autocomplete = 'off';
+    nameInput.classList.add('exercise-name-input');
+    nameInput.setAttribute('aria-autocomplete', 'list');
+
+    const datalistId = `exercise-suggestions-${exerciseCount}`;
+    const datalist = document.createElement('datalist');
+    datalist.id = datalistId;
+    nameInput.setAttribute('list', datalistId);
+    nameInput.setAttribute('aria-controls', datalistId);
+
+    nameGroup.appendChild(nameInput);
+    nameGroup.appendChild(datalist);
+
+    setupExerciseAutocomplete(nameInput, datalist);
+    setupPreviousSetsListener(nameInput, exerciseId);
+
+    return nameGroup;
+}
+
+function createSetsContainer() {
     const setsContainer = document.createElement('div');
     setsContainer.classList.add('sets-container');
+    
+    setsContainer.appendChild(createPreviousSetsDisplay());
+    setsContainer.appendChild(createNewSetsDisplay());
 
-    // Previous sets box
+    return setsContainer;
+}
+
+function createPreviousSetsDisplay() {
     const previousSetsDiv = document.createElement('div');
     previousSetsDiv.classList.add('previous-sets');
     previousSetsDiv.innerHTML = `
@@ -40,91 +96,148 @@ function addExercise() {
             <div class="empty-state">Enter exercise name to see previous sets</div>
         </div>
     `;
+    return previousSetsDiv;
+}
 
-    // New sets box
+function createNewSetsDisplay() {
     const newSetsDiv = document.createElement('div');
     newSetsDiv.classList.add('new-sets');
     newSetsDiv.innerHTML = `
         <h4>Today's Workout</h4>
         <div class="new-sets-content"></div>
     `;
+    return newSetsDiv;
+}
 
-    // Add set button
-    const addSetButton = document.createElement('button');
-    addSetButton.type = 'button';
-    addSetButton.innerText = '+ Add Set';
-    addSetButton.classList.add('btn', 'add-set-btn');
-
-    // Append elements
-    setsContainer.appendChild(previousSetsDiv);
-    setsContainer.appendChild(newSetsDiv);
-    exerciseDiv.appendChild(setsContainer);
-    exerciseDiv.appendChild(addSetButton);
-    exercisesContainer.appendChild(exerciseDiv);
-
-    // Handle add set
+function createAddSetButton(exerciseId, setsContainer) {
+    const addSetButton = createButton('+ Add Set', ['btn', 'add-set-btn']);
     addSetButton.addEventListener('click', () => {
-        const newSetsContent = newSetsDiv.querySelector('.new-sets-content');
-        const setDiv = document.createElement('div');
-        setDiv.classList.add('set');
-
-        const setNumber = newSetsContent.children.length + 1;
-        const setNumberSpan = document.createElement('span');
-        setNumberSpan.textContent = `Set ${setNumber}:`;
-        setNumberSpan.style.minWidth = '50px';
-
-        const repsInput = document.createElement('input');
-        repsInput.type = 'number';
-        repsInput.name = 'reps';
-        repsInput.placeholder = 'Reps';
-        repsInput.min = '1';
-
-        const weightInput = document.createElement('input');
-        weightInput.type = 'number';
-        weightInput.name = 'weight';
-        weightInput.placeholder = 'Weight';
-        weightInput.step = '0.5';
-        weightInput.min = '0';
-
-        // Add comparison placeholder
-        const comparisonSpan = document.createElement('span');
-        comparisonSpan.classList.add('comparison');
-        comparisonSpan.id = `comparison-${exerciseDiv.id}-${setNumber}`;
-
-        setDiv.appendChild(setNumberSpan);
-        setDiv.appendChild(repsInput);
-        setDiv.appendChild(document.createTextNode(' × '));
-        setDiv.appendChild(weightInput);
-        setDiv.appendChild(comparisonSpan);
-
-        newSetsContent.appendChild(setDiv);
-
-        // Add real-time comparison when values change
-        [repsInput, weightInput].forEach(input => {
-            input.addEventListener('input', () => updateComparison(exerciseDiv.id, setNumber));
-        });
+        addNewSet(setsContainer.querySelector('.new-sets-content'), exerciseId);
     });
+    return addSetButton;
+}
 
-    // Fetch previous sets with debounce
-    let debounceTimer;
-    exerciseNameInput.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(async () => {
-            const exerciseName = exerciseNameInput.value.trim();
-            if (exerciseName) {
-                await fetchPreviousSets(exerciseName, previousSetsDiv, exerciseDiv.id);
-            } else {
-                previousSetsDiv.querySelector('.previous-content').innerHTML = 
-                    '<div class="empty-state">Enter exercise name to see previous sets</div>';
+// Autocomplete functionality
+function setupExerciseAutocomplete(inputElement, datalistElement) {
+    let suggestTimer;
+
+    inputElement.addEventListener('input', async function() {
+        clearTimeout(suggestTimer);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            datalistElement.innerHTML = '';
+            return;
+        }
+
+        datalistElement.innerHTML = '<option value="">Loading...</option>';
+
+        suggestTimer = setTimeout(async () => {
+            try {
+                const suggestions = await fetchSuggestions(query);
+                updateDatalist(datalistElement, suggestions);
+            } catch (error) {
+                console.error("Error:", error);
+                showDatalistError(datalistElement);
             }
-        }, 500);
+        }, 300);
     });
+}
+
+async function fetchSuggestions(query) {
+    try {
+        const response = await fetch(`http://localhost:8000/search_exercises?query=${encodeURIComponent(query)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        throw error;
+    }
+}
+
+function updateDatalist(datalistElement, suggestions) {
+    datalistElement.innerHTML = '';
+
+    if (suggestions?.length > 0) {
+        suggestions.forEach(exercise => {
+            const option = document.createElement('option');
+            option.value = exercise.exercise_name;
+            option.textContent = `${exercise.exercise_name} (${exercise.muscle_group})`;
+            datalistElement.appendChild(option);
+        });
+    } else {
+        const option = document.createElement('option');
+        option.value = "";
+        option.textContent = "No matches found";
+        datalistElement.appendChild(option);
+    }
+}
+
+function showDatalistError(datalistElement) {
+    datalistElement.innerHTML = '<option value="">Error loading suggestions</option>';
+}
+
+// Sets management
+function addNewSet(setsContent, exerciseId) {
+    const setDiv = document.createElement('div');
+    setDiv.classList.add('set');
+
+    const setNumber = setsContent.children.length + 1;
+    const setNumberSpan = document.createElement('span');
+    setNumberSpan.textContent = `Set ${setNumber}:`;
+
+    const repsInput = createNumberInput('reps', 'Reps', 1);
+    const weightInput = createNumberInput('weight', 'Weight', 0, 0.5);
+
+    const comparisonSpan = document.createElement('span');
+    comparisonSpan.classList.add('comparison');
+    comparisonSpan.id = `comparison-${exerciseId}-${setNumber}`;
+
+    setDiv.appendChild(setNumberSpan);
+    setDiv.appendChild(repsInput);
+    setDiv.appendChild(document.createTextNode(' × '));
+    setDiv.appendChild(weightInput);
+    setDiv.appendChild(comparisonSpan);
+
+    setsContent.appendChild(setDiv);
+
+    [repsInput, weightInput].forEach(input => {
+        input.addEventListener('input', () => updateComparison(exerciseId, setNumber));
+    });
+}
+
+function createNumberInput(name, placeholder, min, step = 1) {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.name = name;
+    input.placeholder = placeholder;
+    input.min = min.toString();
+    if (step) input.step = step.toString();
+    return input;
+}
+
+// Previous sets functionality
+function setupPreviousSetsListener(inputElement, exerciseId) {
+    inputElement.addEventListener('input', debounce(async () => {
+        const exerciseName = inputElement.value.trim();
+        if (exerciseName) {
+            const previousSetsDiv = document.querySelector(`#${exerciseId} .previous-sets`);
+            await fetchPreviousSets(exerciseName, previousSetsDiv, exerciseId);
+        }
+    }, 500));
 }
 
 async function fetchPreviousSets(exerciseName, previousSetsDiv, exerciseId) {
     try {
         const response = await fetch(`http://localhost:8000/previous_exercise/${encodeURIComponent(exerciseName)}`, {
-            method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -134,120 +247,120 @@ async function fetchPreviousSets(exerciseName, previousSetsDiv, exerciseId) {
         
         if (response.ok) {
             const data = await response.json();
-            
-            if (data.sets && data.sets.length > 0) {
-                const date = new Date(data.date).toLocaleDateString();
-                let html = `
-                    <div class="previous-header">
-                        <strong>${date}</strong>
-                    </div>
-                    <div class="previous-sets-list">
-                `;
-                
-                data.sets.forEach((set, index) => {
-                    html += `
-                        <div class="previous-set">
-                            <span>Set ${index + 1}:</span>
-                            <span>${set.reps} reps × ${set.weight} kg</span>
-                        </div>
-                    `;
-                });
-                
-                html += `</div>`;
-                previousContent.innerHTML = html;
-                
-                // Store previous sets data on the exercise div for comparison
-                document.getElementById(exerciseId).dataset.previousSets = JSON.stringify(data.sets);
-            } else {
-                previousContent.innerHTML = '<div class="empty-state">No previous records for this exercise</div>';
-            }
+            displayPreviousSets(data, previousContent, exerciseId);
         } else {
-            previousContent.innerHTML = '<div class="empty-state">No previous records found</div>';
+            showPreviousSetsError(previousContent);
         }
     } catch (error) {
-        console.error('Error fetching previous sets:', error);
-        previousSetsDiv.querySelector('.previous-content').innerHTML = 
-            '<div class="empty-state">Error loading previous data</div>';
+        console.error('Error:', error);
+        showPreviousSetsError(previousSetsDiv.querySelector('.previous-content'));
     }
 }
 
-function calculateTotalVolume(sets) {
-    return sets.reduce((total, set) => total + (set.reps * set.weight), 0);
+function displayPreviousSets(data, container, exerciseId) {
+    if (data.sets?.length > 0) {
+        const date = new Date(data.date).toLocaleDateString();
+        let html = `<div class="previous-header"><strong>${date}</strong></div><div class="previous-sets-list">`;
+        data.sets.forEach((set, index) => {
+            html += `<div class="previous-set"><span>Set ${index + 1}:</span><span>${set.reps} reps × ${set.weight} kg</span></div>`;
+        });
+        html += `</div>`;
+        container.innerHTML = html;
+        document.getElementById(exerciseId).dataset.previousSets = JSON.stringify(data.sets);
+    } else {
+        container.innerHTML = '<div class="empty-state">No previous records</div>';
+    }
 }
 
+function showPreviousSetsError(container) {
+    container.innerHTML = '<div class="empty-state">Error loading data</div>';
+}
+
+// Comparison functionality
 function updateComparison(exerciseId, setNumber) {
     const exerciseDiv = document.getElementById(exerciseId);
     const previousSets = JSON.parse(exerciseDiv.dataset.previousSets || '[]');
     const comparisonSpan = document.getElementById(`comparison-${exerciseId}-${setNumber}`);
     
     if (!previousSets || previousSets.length < setNumber) {
-        comparisonSpan.textContent = '';
-        comparisonSpan.className = 'comparison';
+        clearComparison(comparisonSpan);
         return;
     }
-    
+
     const currentSetDiv = exerciseDiv.querySelector(`.new-sets-content .set:nth-child(${setNumber})`);
-    const repsInput = currentSetDiv.querySelector('input[name="reps"]');
-    const weightInput = currentSetDiv.querySelector('input[name="weight"]');
-    
+    const repsInput = currentSetDiv.querySelector("input[name='reps']");
+    const weightInput = currentSetDiv.querySelector("input[name='weight']");
+
     if (!repsInput.value || !weightInput.value) {
-        comparisonSpan.textContent = '';
-        comparisonSpan.className = 'comparison';
+        clearComparison(comparisonSpan);
         return;
     }
-    
-    const currentReps = parseInt(repsInput.value);
-    const currentWeight = parseFloat(weightInput.value);
-    const previousSet = previousSets[setNumber - 1];
-    
-    if (!previousSet) return;
-    
-    const previousReps = previousSet.reps;
-    const previousWeight = previousSet.weight;
-    
-    const currentVolume = currentReps * currentWeight;
-    const previousVolume = previousReps * previousWeight;
-    
-    let comparisonText = '';
-    let comparisonClass = '';
-    
-    if (currentVolume > previousVolume) {
-        comparisonText = `↑ ${Math.round((currentVolume/previousVolume - 1) * 100)}%`;
-        comparisonClass = 'better';
-    } else if (currentVolume < previousVolume) {
-        comparisonText = `↓ ${Math.round((1 - currentVolume/previousVolume) * 100)}%`;
-        comparisonClass = 'worse';
-    } else {
-        comparisonText = '→ Same';
-        comparisonClass = 'same';
-    }
-    
-    comparisonSpan.textContent = comparisonText;
-    comparisonSpan.className = `comparison ${comparisonClass}`;
+
+    const comparison = calculateComparison(
+        parseInt(repsInput.value),
+        parseFloat(weightInput.value),
+        previousSets[setNumber - 1]
+    );
+
+    updateComparisonDisplay(comparisonSpan, comparison.result, comparison.class);
 }
 
-document.getElementById("workout-form").addEventListener("submit", async function(event) {
+function calculateComparison(currentReps, currentWeight, previousSet) {
+    if (!previousSet) return { result: '', class: '' };
+
+    const previousVolume = previousSet.reps * previousSet.weight;
+    const currentVolume = currentReps * currentWeight;
+
+    if (currentVolume > previousVolume) {
+        return {
+            result: `↑ ${Math.round((currentVolume/previousVolume - 1) * 100)}%`,
+            class: 'better'
+        };
+    } else if (currentVolume < previousVolume) {
+        return {
+            result: `↓ ${Math.round((1 - currentVolume/previousVolume) * 100)}%`,
+            class: 'worse'
+        };
+    }
+    return {
+        result: '→ Same',
+        class: 'same'
+    };
+}
+
+function updateComparisonDisplay(element, text, className) {
+    element.textContent = text;
+    element.className = `comparison ${className}`;
+}
+
+function clearComparison(element) {
+    element.textContent = '';
+    element.className = 'comparison';
+}
+
+// Form handling
+async function handleFormSubmit(event) {
     event.preventDefault();
 
-    const exercises = [];
-    const exerciseDivs = document.querySelectorAll(".exercise");
+    const exercises = collectExerciseData();
+    if (exercises.length === 0) {
+        showAlert("Please add at least one exercise with sets");
+        return;
+    }
 
-    exerciseDivs.forEach(div => {
+    try {
+        await submitWorkoutData(exercises);
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert("Failed to save workout");
+    }
+}
+
+function collectExerciseData() {
+    const exercises = [];
+    document.querySelectorAll(".exercise").forEach(div => {
         const exerciseName = div.querySelector("input[name='exercise_name']").value;
-        const sets = [];
-        
-        div.querySelectorAll(".new-sets .set").forEach((setDiv, idx) => {
-            const repsInput = setDiv.querySelector("input[name='reps']");
-            const weightInput = setDiv.querySelector("input[name='weight']");
-            
-            if (repsInput && weightInput && repsInput.value && weightInput.value) {
-                sets.push({
-                    set_number: idx + 1,
-                    reps: parseInt(repsInput.value),
-                    weight: parseFloat(weightInput.value)
-                });
-            }
-        });
+        const sets = collectSetsData(div);
 
         if (exerciseName && sets.length > 0) {
             exercises.push({
@@ -256,36 +369,71 @@ document.getElementById("workout-form").addEventListener("submit", async functio
             });
         }
     });
+    return exercises;
+}
 
-    if (exercises.length === 0) {
-        alert("Please add at least one exercise with sets");
-        return;
-    }
+function collectSetsData(exerciseDiv) {
+    const sets = [];
+    exerciseDiv.querySelectorAll(".new-sets .set").forEach((setDiv, idx) => {
+        const repsInput = setDiv.querySelector("input[name='reps']");
+        const weightInput = setDiv.querySelector("input[name='weight']");
 
-    const workoutData = {
-        exercises: exercises,
-        date: new Date().toISOString()
-    };
-
-    try {
-        const response = await fetch('http://localhost:8000/workout_sessions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(workoutData)
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-            alert("Workout saved successfully!");
-            location.reload();
-        } else {
-            alert(result.detail || "Error saving workout");
+        if (repsInput?.value && weightInput?.value) {
+            sets.push({
+                set_number: idx + 1,
+                reps: parseInt(repsInput.value),
+                weight: parseFloat(weightInput.value)
+            });
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert("Failed to save workout");
+    });
+    return sets;
+}
+
+async function submitWorkoutData(exercises) {
+    const response = await fetch('http://localhost:8000/workout_sessions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            exercises: exercises,
+            date: new Date().toISOString()
+        })
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+        showAlert("Workout saved successfully!", true);
+    } else {
+        showAlert(result.detail || "Error saving workout");
     }
-});
+}
+
+// Utility functions
+function createButton(text, classes = []) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.classList.add(...classes);
+    button.textContent = text;
+    return button;
+}
+
+function showAlert(message, isSuccess = false) {
+    alert(message); // Replace with a more sophisticated notification system if needed
+    if (isSuccess) {
+        location.reload();
+    }
+}
+
+function redirectToLogin() {
+    window.location.href = '/login';
+}
+
+function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+}
