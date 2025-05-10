@@ -16,12 +16,12 @@ from app.models import Goal, Progress
 from datetime import datetime, timedelta
 from app.auth import create_access_token
 from app.auth import hash_password
-from app.models import WorkoutSession, WorkoutExercise, WorkoutSet
+from app.models import WorkoutSession, WorkoutExercise, WorkoutSet,Exercise
 from app.food_db import FoodSessionLocal
-from app.schemas import FoodSuggestion,FoodLogUpdate
+from app.schemas import FoodSuggestion,FoodLogUpdate,ExerciseSuggestion
 from fastapi import Query
 from sqlalchemy import cast, Date
-
+from app.exercise_db import ExerciseSessionLocal
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -49,6 +49,12 @@ def get_food_db():
     finally:
         db.close()
 
+def get_exercise_db():
+    db = ExerciseSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -264,6 +270,7 @@ def submit_progress(
         "calorie_adjustment": calorie_adjustment,
         "suggestion": f"{suggestion} calories by {abs(calorie_adjustment)} kcal/day"
     }
+
 @app.post("/workout_sessions")
 async def create_workout_session(
     session_data: schemas.WorkoutSessionCreate,
@@ -433,6 +440,27 @@ async def get_previous_exercise(
         "sets": previous_sets
     }
 
+@app.get("/search_exercises", response_model=List[ExerciseSuggestion])
+def search_exercises(
+    query: str, 
+    db: Session = Depends(get_exercise_db)
+):
+    if len(query) < 2:
+        raise HTTPException(
+            status_code=400, 
+            detail="Query must be at least 2 characters long"
+        )
+
+    exercises = db.query(Exercise).filter(
+        Exercise.exercise_name.ilike(f"%{query}%")
+    ).limit(60).all()
+
+    if not exercises:
+        print("No exercises found for query:", query)
+    
+    return exercises
+
+#food
 from app.schemas import LogFoodRequest
 from app.models import UserConsumption, FoodItem, Base
 
@@ -441,7 +469,7 @@ food_session_local = FoodSessionLocal
 @app.post("/log-food")
 def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_user)):
     food_session: Session = food_session_local()
-    gym_session: Session = SessionLocal()
+    session: Session = SessionLocal()
 
     try:
         # 1. Get food info from food_data.db
@@ -471,8 +499,8 @@ def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_u
             carbs=carbs,
             consumed_at=consumed_at
         )
-        gym_session.add(new_entry)
-        gym_session.commit()
+        session.add(new_entry)
+        session.commit()
 
         # Return the new entry data so frontend can immediately display it
         return {
@@ -494,11 +522,11 @@ def log_food(request: LogFoodRequest, current_user: User = Depends(get_current_u
     except HTTPException as e:
         raise e
     except Exception as e:
-        gym_session.rollback()
+        session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         food_session.close()
-        gym_session.close()
+        session.close()
 
 
 @app.get("/food-suggestions", response_model=List[FoodSuggestion])

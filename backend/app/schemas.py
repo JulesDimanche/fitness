@@ -39,11 +39,20 @@ class FoodSuggestion(BaseModel):
     serving_description: str
     serving_grams: float
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
+
 
 class FoodLogUpdate(BaseModel):
     food_name: Optional[str]
     quantity: Optional[float]
     grams: Optional[float]
+
+class ExerciseSuggestion(BaseModel):
+    id: int
+    exercise_name: str
+    muscle_group: str
+    equipment:Optional[str] = None 
+    class Config:
+        orm_mode = True
+
     
