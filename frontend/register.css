@@ -6,6 +6,7 @@
   --void-glow: radial-gradient(circle at center, rgba(0, 242, 255, 0.1) 0%, transparent 50%);
 }
 
+
 body {
   background-color: var(--dark-bg);
   color: white;
@@ -74,7 +75,8 @@ body {
   font-weight: bold;
 }
 
-/* Evolution Track (Slideshow) */
+
+/* Evolution Track (Used for form container) */
 .evolution-track {
   background: rgba(20, 20, 40, 0.7);
   border: 1px solid var(--neon-blue);
@@ -88,7 +90,7 @@ body {
 }
 
 .evolution-track::before {
-  /*content: 'YOUR POTENTIAL';*/
+
   position: absolute;
   top: -12px;
   left: 20px;
@@ -124,60 +126,38 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* PROGRESS BAR FIXES */
-.progress-container {
-  margin-top: 1.5rem;
+/* Form Styles */
+.rpg-form {
+  margin-top: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
   position: relative;
 }
 
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+.form-group input {
+  width: 100%;
+  padding: 12px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-family: 'Oxanium', sans-serif;
+  font-size: 1rem;
 }
 
-.progress-bar {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
+.form-group input:focus {
+  outline: none;
+  border-bottom-color: var(--neon-blue);
 }
 
-.progress-fill {
-  height: 100%;
-  width: 0; /* Start at 0 */
-  background: linear-gradient(90deg, 
-    var(--neon-purple), 
-    var(--neon-blue));
-  box-shadow: 0 0 10px var(--neon-blue);
-  border-radius: 4px;
-  position: relative;
-  transition: width 1.5s cubic-bezier(0.65, 0, 0.35, 1);
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Oxanium', sans-serif;
 }
 
-/* Glowing progress tip */
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 10px;
-  height: 100%;
-  background: white;
-  border-radius: 50%;
-  filter: blur(3px);
-  opacity: 0.7;
-  animation: progress-pulse 2s infinite;
-}
-
-@keyframes progress-pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 0.3; }
-}
-
-/* CTA Buttons */
+/* Buttons */
 .cta-buttons {
   display: flex;
   justify-content: center;
@@ -196,6 +176,8 @@ body {
   min-width: 180px;
   position: relative;
   overflow: hidden;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-neon {
@@ -207,25 +189,6 @@ body {
 .btn-neon:hover {
   transform: translateY(-3px);
   box-shadow: 0 0 25px rgba(0, 242, 255, 0.7);
-}
-
-.btn-ghost {
-  border: 1px solid var(--neon-blue);
-  color: var(--neon-blue);
-}
-
-.btn-ghost:hover {
-  background: rgba(0, 242, 255, 0.1);
-}
-
-.btn-analyze {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--neon-purple);
-  color: white;
-}
-
-.btn-analyze:hover {
-  background: rgba(180, 0, 255, 0.1);
 }
 
 /* Button hover effects */
@@ -257,39 +220,23 @@ body {
   100% { transform: translateX(100%) rotate(30deg); }
 }
 
-/* Motivational Quote */
+/* Footer Links */
 .motivation {
   max-width: 600px;
   margin: 3rem auto;
   padding: 1.5rem;
-  border-left: 3px solid var(--neon-blue);
-  background: rgba(0, 0, 0, 0.3);
-  position: relative;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.motivation::before {
-  content: 'SYSTEM MESSAGE';
-  position: absolute;
-  top: -10px;
-  left: 10px;
-  background: var(--dark-bg);
-  padding: 0 5px;
-  font-size: 0.7rem;
+.neon-link {
   color: var(--neon-blue);
+  text-decoration: none;
+  transition: text-shadow 0.3s ease;
 }
 
-.quote-icon {
-  font-size: 3rem;
-  line-height: 0;
-  color: var(--neon-blue);
-  vertical-align: middle;
-}
-
-.quote-author {
-  display: block;
-  margin-top: 0.5rem;
-  color: var(--neon-purple);
-  font-style: italic;
+.neon-link:hover {
+  text-shadow: 0 0 8px var(--neon-blue);
 }
 
 /* Responsive */
@@ -305,5 +252,9 @@ body {
   
   .evolution-track {
     padding: 1.5rem;
+  }
+  
+  .form-group input {
+    font-size: 0.9rem;
   }
 }
