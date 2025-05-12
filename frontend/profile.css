@@ -1,0 +1,128 @@
+:root {
+  --neon-blue: #00f2ff;
+  --neon-purple: #b400ff;
+  --dark-bg: #0a0a12;
+  --panel-bg: rgba(20, 20, 40, 0.8);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--dark-bg);
+  color: white;
+  font-family: 'Oxanium', sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+/* STAT HEADER */
+.stats-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.stats-header h1 {
+  font-size: 3rem;
+  color: var(--neon-blue);
+  text-shadow: 0 0 8px var(--neon-blue);
+}
+
+/* PROFILE LAYOUT */
+.profile-content {
+  display: flex;
+  gap: 2rem;
+}
+
+/* LEFT SIDE */
+.profile-left {
+  flex: 1;
+}
+
+.profile-picture {
+  width: 100%;
+  background-color: var(--panel-bg);
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 2rem;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.1);
+}
+
+.profile-picture img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 2px solid var(--neon-purple);
+}
+
+.recent-workouts {
+  background-color: var(--panel-bg);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(180, 0, 255, 0.1);
+}
+
+.recent-workouts h2 {
+  color: var(--neon-purple);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* RIGHT SIDE */
+.profile-right {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-section {
+  background-color: var(--panel-bg);
+  padding: 1.2rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.05);
+}
+
+.profile-section h2 {
+  font-size: 1.2rem;
+  color: var(--neon-blue);
+  margin-bottom: 1rem;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 0.8rem;
+}
+
+.stat-grid div {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Example Progress Bar (optional) */
+.progress-bar {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  height: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: var(--neon-purple);
+  width: 60%; /* dynamically change this */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profile-content {
+    flex-direction: column;
+  }
+}
