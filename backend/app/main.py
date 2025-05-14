@@ -102,11 +102,10 @@ init_db()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 @app.post("/analyze")
-def analyze_user(data: UserData, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def analyze_user(data: UserData):
     height_m = data.height / 100
     bmi = round(data.weight / (height_m ** 2), 2)
 
-    # BMI category
     if bmi < 18.5:
         status = "Underweight"
     elif 18.5 <= bmi < 25:
@@ -116,49 +115,32 @@ def analyze_user(data: UserData, db: Session = Depends(get_db), current_user: Us
     else:
         status = "Obese"
 
-    # BMR Calculation
     if data.gender == "male":
         bmr = 10 * data.weight + 6.25 * data.height - 5 * data.age + 5
     else:
         bmr = 10 * data.weight + 6.25 * data.height - 5 * data.age - 161
 
-    # Activity factor
     activity_map = {"low": 1.2, "medium": 1.55, "high": 1.9}
     tdee = round(bmr * activity_map.get(data.activity, 1.2))
 
-    # Goal calorie adjustment
     weight_diff = data.target_weight - data.weight
-    target_duration_weekly=int(data.target_duration*4)
-    kg_per_week = weight_diff / (target_duration_weekly)
-    calorie_change_per_week = kg_per_week * 7700  # 7700 kcal = 1kg fat
-    required_calories = round(tdee + calorie_change_per_week / 7)  # daily adjustment
-    goal = Goal(
-        user_id=current_user.id,
-        target_weight=data.target_weight,
-        duration_weeks=target_duration_weekly,
-        goal_type=data.goal,
-        start_weight=data.weight 
-    )
-    db.add(goal)
-    db.flush() 
+    duration_weeks = int(data.target_duration * 4)
+    kg_per_week = weight_diff / duration_weeks
+    calorie_change_per_week = kg_per_week * 7700
+    required_calories = round(tdee + calorie_change_per_week / 7)
 
-    weekly_progress=[]
-    for week in range(1,target_duration_weekly +1):
-        progress_weight=round(data.weight+kg_per_week*week,1)
-        temp_bmr = 10 * progress_weight + 6.25 * data.height - 5 * data.age + (5 if data.gender == "male" else -161)
+    weekly_progress = []
+    for week in range(1, duration_weeks + 1):
+        projected_weight = round(data.weight + kg_per_week * week, 1)
+        temp_bmr = 10 * projected_weight + 6.25 * data.height - 5 * data.age + (5 if data.gender == "male" else -161)
         temp_tdee = round(temp_bmr * activity_map.get(data.activity, 1.2))
         temp_required = round(temp_tdee + calorie_change_per_week / 7)
-        progress = Progress(
-            user_id=current_user.id,
-            week=week,
-            weight=progress_weight,
-            date=datetime.now() + timedelta(weeks=week)
-        )
-        db.add(progress)
-        weekly_progress.append({"week":week,"weight":progress_weight,"required_calories":temp_required})
-    db.commit()
+        weekly_progress.append({
+            "week": week,
+            "weight": projected_weight,
+            "required_calories": temp_required
+        })
 
-    # Suggestion text
     if weight_diff > 0:
         suggestion = f"Aim to gain {kg_per_week:.2f} kg/week. Increase calories gradually."
     elif weight_diff < 0:
@@ -166,13 +148,6 @@ def analyze_user(data: UserData, db: Session = Depends(get_db), current_user: Us
     else:
         suggestion = "You are already at your target weight."
 
-    '''print("Returning response:", {
-        "bmi": bmi,
-        "status": status,
-        "Maintanence_calories": tdee,
-        "required_calories": required_calories,
-        "weekly_change": round(kg_per_week, 2),
-        "suggestion": suggestion})'''
     return {
         "bmi": bmi,
         "status": status,
@@ -182,6 +157,41 @@ def analyze_user(data: UserData, db: Session = Depends(get_db), current_user: Us
         "weekly_progress": weekly_progress,
         "suggestion": suggestion
     }
+from fastapi import Body
+
+@app.post("/save_analysis")
+def save_analysis(
+    data: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    start_weight = data["start_weight"]
+    target_weight = data["target_weight"]
+    duration_weeks = len(data["weekly_progress"])
+    goal_type = "gain" if target_weight > start_weight else "lose" if target_weight < start_weight else "maintain"
+
+    goal = Goal(
+        user_id=current_user.id,
+        target_weight=target_weight,
+        duration_weeks=duration_weeks,
+        goal_type=goal_type,
+        start_weight=start_weight
+    )
+    db.add(goal)
+    db.flush()
+
+    for entry in data["weekly_progress"]:
+        progress = Progress(
+            user_id=current_user.id,
+            week=entry["week"],
+            weight=entry["weight"],
+            date=datetime.now() + timedelta(weeks=entry["week"])
+        )
+        db.add(progress)
+
+    db.commit()
+    return {"message": "Analysis saved successfully"}
+
 @app.post("/progress")
 def save_progress(data: schemas.ProgressCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     progress = models.Progress(
