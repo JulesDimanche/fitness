@@ -1,6 +1,16 @@
 const form = document.getElementById("bmiForm");
 const resultDiv = document.getElementById("result");
 
+const logoutBtn = document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token"); // Clear the auth token
+    alert("You have been logged out.");
+    window.location.href = "login.html"; // Redirect to login page
+  });
+}
+
 if (form) {
   const goalSelect = document.querySelector('select[name="goal"]');
   const paceContainer = document.getElementById("pace-container");

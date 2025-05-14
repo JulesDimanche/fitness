@@ -12,6 +12,27 @@ body {
   color: white;
   font-family: 'Oxanium', sans-serif;
 }
+.logout-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: transparent;
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  padding: 0.5em 1em;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 1000; /* ensure it's on top */
+  transition: all 0.2s ease-in-out;
+}
+
+.logout-button:hover {
+  background-color: #00ffff;
+  color: #000;
+  box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+}
+
 
 .container {
   max-width: 1200px;
