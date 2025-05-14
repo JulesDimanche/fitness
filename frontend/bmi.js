@@ -50,15 +50,32 @@ if (form) {
 
       const result = await response.json();
 
+      const calorieDiff = Math.abs(result.required_calories - result.Maintanence_calories);
+      let warningMsg = "";
+      if (calorieDiff > 700) {
+  if (result.required_calories > result.Maintanence_calories) {
+    warningMsg = `<p style="color: #ff4d4d; font-weight: bold; text-shadow: 0 0 5px #ff1a1a;">
+      ⚠️ Your surplus is high — gaining too fast may increase fat gain. Consider reducing pace.
+    </p>`;
+  } else {
+    warningMsg = `<p style="color: #ff4d4d; font-weight: bold; text-shadow: 0 0 5px #ff1a1a;">
+      ⚠️ Your deficit is high — losing too fast may affect muscle mass. Consider slowing down.
+    </p>`;
+  }
+}
+
+
       resultDiv.innerHTML = `
-        <h3>Your Result</h3>
-        <p><strong>BMI:</strong> ${result.bmi}</p>
-        <p><strong>Status:</strong> ${result.status}</p>
-        <p><strong>Maintenance Calories:</strong> ${result.Maintanence_calories} kcal/day</p>
-        <p><strong>Recommended Calories:</strong> ${result.required_calories} kcal/day</p>
-        <p><strong>Suggestion:</strong> ${result.suggestion}</p>
-        <p><strong>Weekly Change:</strong> ${result.weekly_change} kg/week</p>
-      `;
+      <h3>Your Result</h3>
+      <p><strong>BMI:</strong> ${result.bmi}</p>
+      <p><strong>Status:</strong> ${result.status}</p>
+      <p><strong>Maintenance Calories:</strong> ${result.Maintanence_calories} kcal/day</p>
+      <p><strong>Recommended Calories:</strong> ${result.required_calories} kcal/day</p>
+      ${warningMsg}
+      <p><strong>Suggestion:</strong> ${result.suggestion}</p>
+      <p><strong>Weekly Change:</strong> ${result.weekly_change} kg/week</p>
+    `;
+
 
       if (result.weekly_progress?.length > 0) {
         resultDiv.innerHTML += "<h4>Weekly Progress</h4>";

@@ -1,0 +1,96 @@
+:root {
+  --neon-blue: #00f2ff;
+  --neon-purple: #b400ff;
+  --dark-bg: #0a0a12;
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: white;
+  font-family: 'Oxanium', 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+}
+
+h1 {
+  color: var(--neon-blue);
+  text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-purple);
+  margin-bottom: 2rem;
+}
+
+form {
+  background: rgba(20, 20, 40, 0.8);
+  border: 1px solid var(--neon-blue);
+  border-radius: 10px;
+  padding: 2rem;
+  max-width: 500px;
+  margin: 0 auto 2rem;
+  box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+}
+
+input,
+select {
+  width: 100%;
+  padding: 0.8rem;
+  margin: 0.7rem 0;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: white;
+  font-family: 'Oxanium', sans-serif;
+  font-size: 1rem;
+}
+select option {
+  color: black; /* Or white, depending on browser support */
+  background-color: white;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-bottom: 1px solid var(--neon-blue);
+}
+
+button {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+  color: black;
+  font-weight: bold;
+  padding: 0.8rem 1.8rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  cursor: pointer;
+  border: none;
+  transition: 0.3s;
+  box-shadow: 0 0 15px rgba(180, 0, 255, 0.4);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0, 242, 255, 0.7);
+}
+
+a {
+  display: inline-block;
+  margin: 1rem;
+  color: var(--neon-blue);
+  text-decoration: none;
+  font-weight: bold;
+  transition: text-shadow 0.3s;
+}
+
+a:hover {
+  text-shadow: 0 0 8px var(--neon-blue);
+}
+
+#result {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid var(--neon-blue);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.1);
+}
