@@ -189,7 +189,8 @@ def save_analysis(
             user_id=current_user.id,
             week=entry["week"],
             weight=entry["weight"],
-            date=datetime.now() + timedelta(weeks=entry["week"])
+            date=datetime.now() + timedelta(weeks=entry["week"]),
+            calories=entry.get("required_calories", 0)
         )
         db.add(progress)
 

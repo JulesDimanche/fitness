@@ -59,6 +59,7 @@ class Progress(Base):
     weight = Column(Float)
     actual_weight = Column(Float,nullable=True)
     date = Column(Date)
+    calories = Column(Integer)
 
     user = relationship("User", back_populates="progress")
 
