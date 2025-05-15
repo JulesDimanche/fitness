@@ -1,0 +1,97 @@
+/* General Setup */
+body {
+  background: #0d0d0d;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+  overflow-x: hidden;
+}
+
+/* Heading */
+h2 {
+  text-align: center;
+  font-size: 2rem;
+  color: #00bfff;
+  text-shadow: 0 0 2px #016282, 0 0 1px #00bfff;
+  margin-bottom: 30px;
+}
+
+/* Form Styling */
+form#progressForm {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 25px;
+  background: #1a1a1a;
+  border: 2px solid #3b3b3b;
+  border-radius: 20px;
+  box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #b3b3b3;
+}
+
+input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background-color: #2c2c2c;
+  color: #fff;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  outline: none;
+}
+
+input[type="number"]::placeholder {
+  color: #888;
+}
+
+/* Button */
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  background-color: #7f00ff;
+  border: none;
+  color: #fff;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 0 10px #7f00ff;
+}
+
+button:hover {
+  background-color: #9b30ff;
+  transform: scale(1.03);
+}
+
+/* Feedback Message */
+#feedback {
+  max-width: 500px;
+  margin: 30px auto 0 auto;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #00ff99;
+  white-space: pre-wrap;
+}
+
+/* Optional Neon Animation */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 10px #7f00ff;
+  }
+  50% {
+    box-shadow: 0 0 20px #00bfff;
+  }
+  100% {
+    box-shadow: 0 0 10px #7f00ff;
+  }
+}
+
+
