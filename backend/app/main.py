@@ -165,6 +165,10 @@ def save_analysis(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    db.query(Goal).filter(Goal.user_id == current_user.id).delete()
+    db.query(Progress).filter(Progress.user_id == current_user.id).delete()
+    db.commit()
+    
     start_weight = data["start_weight"]
     target_weight = data["target_weight"]
     duration_weeks = len(data["weekly_progress"])
