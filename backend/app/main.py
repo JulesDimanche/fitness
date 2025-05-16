@@ -255,9 +255,10 @@ def submit_progress(
     expected_weight = round(start_weight + kg_per_week * week, 1)
 
     weight_diff = actual_weight - expected_weight
-    calorie_adjustment = round((weight_diff * 7700) / 7)
+    calorie_adjustment = round((-weight_diff * 7700) / 7)  # per day
     suggestion = "Maintain" if abs(calorie_adjustment) < 50 else ("Increase" if calorie_adjustment < 0 else "Decrease")
 
+    # Update or create current week with actual weight (but do not store calories here)
     progress_entry = db.query(models.Progress).filter(
         models.Progress.user_id == current_user.id,
         models.Progress.week == week
@@ -266,15 +267,36 @@ def submit_progress(
     if progress_entry:
         progress_entry.actual_weight = actual_weight
         progress_entry.date = date.today()
+        # Do not set calories here
     else:
         progress_entry = models.Progress(
             user_id=current_user.id,
             week=week,
-            weight=None,  # predicted weight is not updated here
+            weight=None,
             actual_weight=actual_weight,
+            calories=None,
             date=date.today()
         )
         db.add(progress_entry)
+
+    # Apply calorie adjustment to all future weeks
+    for w in range(week + 1, latest_goal.duration_weeks + 1):
+        future_entry = db.query(models.Progress).filter(
+            models.Progress.user_id == current_user.id,
+            models.Progress.week == w
+        ).first()
+
+        if future_entry:
+            future_entry.calories = (future_entry.calories or 0) + calorie_adjustment
+        else:
+            db.add(models.Progress(
+                user_id=current_user.id,
+                week=w,
+                weight=None,
+                actual_weight=None,
+                calories=calorie_adjustment,
+                date=None
+            ))
 
     db.commit()
 
@@ -283,7 +305,7 @@ def submit_progress(
         "actual_weight": actual_weight,
         "expected_weight": expected_weight,
         "calorie_adjustment": calorie_adjustment,
-        "suggestion": f"{suggestion} calories by {abs(calorie_adjustment)} kcal/day"
+        "suggestion": f"{suggestion} calories by {abs(calorie_adjustment)} kcal/day (applied from week {week + 1})"
     }
 
 @app.post("/workout_sessions")
