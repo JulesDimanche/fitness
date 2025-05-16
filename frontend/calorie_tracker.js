@@ -131,10 +131,10 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
     const food_name = foodInput.value.trim();
     const mealTime = document.getElementById("meal_time").value;
 
-    if (!food_name) {
+    /*if (!food_name) {
         resultText.textContent = "❌ Please select a food item";
         return;
-    }
+    }*/
 
     const quantityVal = parseFloat(quantityInput.value);
     const gramsVal = parseFloat(gramsInput.value);
@@ -262,12 +262,13 @@ function renderFoodLogs(logs) {
     const totalFat = logs.reduce((sum, log) => sum + log.fat, 0);
 
     let html = `
-        <div class="log-summary">
-            <p>Total Calories: ${totalCalories.toFixed(1)}</p>
-            <p>Total Protein: ${totalProtein.toFixed(1)}g</p>
-            <p>Total Fat: ${totalFat.toFixed(1)}g</p>
-        </div>
-    `;
+    <div class="nutrition-totals">
+        <div class="total-box"><strong>Total Calories:</strong> <span>${totalCalories.toFixed(1)}</span> kcal</div>
+        <div class="total-box"><strong>Total Protein:</strong> <span>${totalProtein.toFixed(1)}</span> g</div>
+        <div class="total-box"><strong>Total Fat:</strong> <span>${totalFat.toFixed(1)}</span> g</div>
+    </div>
+`;
+
 
     // Render meals in correct order
     mealOrder.forEach(meal => {
