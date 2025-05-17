@@ -490,7 +490,7 @@ def search_exercises(
 
     exercises = db.query(Exercise).filter(
         Exercise.exercise_name.ilike(f"%{query}%")
-    ).limit(60).all()
+    ).limit(10).all()
 
     if not exercises:
         print("No exercises found for query:", query)
