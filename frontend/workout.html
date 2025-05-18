@@ -8,12 +8,20 @@
 </head>
 <body>
     <div class="container">
-        <h1>Workout Tracker</h1>
-        <form id="workout-form">
-            <div id="exercises-container"></div>
-            <button type="submit" class="btn btn-primary">Save Workout</button>
-        </form>
-    </div>
+    <h1>Workout Tracker</h1>
+    <form id="workout-form">
+        <div class="date-picker-group">
+            <label for="workout-date">Workout Date:</label>
+            <input type="date" id="workout-date" name="workout_date" required>
+        </div>
+        <div id="exercises-container"></div>
+        <button type="submit" class="btn btn-primary">Save Workout</button>
+    </form>
+
+    <!-- 🛠 Add this -->
+    <div id="workout-log-container" class="workout-log-section"></div>
+</div>
+
 
     <script src="workout.js"></script>
 </body>

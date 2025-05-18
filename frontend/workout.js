@@ -338,6 +338,60 @@ function clearComparison(element) {
     element.className = 'comparison';
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  const dateInput = document.getElementById("workout-date");
+
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Set date input default value to today
+  dateInput.value = today;
+
+  // Load workouts for today on page load
+  loadWorkoutsByDate(today);
+
+  // Listen for changes and load accordingly
+  dateInput.addEventListener("change", (e) => {
+    const selectedDate = e.target.value;
+    if (selectedDate) {
+      loadWorkoutsByDate(selectedDate);
+    }
+  });
+});
+
+
+
+async function loadWorkoutsByDate(date) {
+    const response = await fetch(`http://localhost:8000/workouts_by_date?date=${date}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json();
+
+    const container = document.getElementById("workout-log-container");
+    container.innerHTML = ""; // Clear previous
+
+    if (data.exercises?.length > 0) {
+        data.exercises.forEach(exercise => {
+            const exBlock = document.createElement("div");
+            exBlock.classList.add("exercise-log");
+
+            let html = `<h4>${exercise.exercise_name}</h4><ul>`;
+            exercise.sets.forEach(set => {
+                html += `<li>${set.reps} reps × ${set.weight} kg</li>`;
+            });
+            html += `</ul>`;
+            exBlock.innerHTML = html;
+
+            container.appendChild(exBlock);
+        });
+    } else {
+        container.innerHTML = "<div class='empty-state'>No workouts logged on this date.</div>";
+    }
+}
+
 // Form handling
 async function handleFormSubmit(event) {
     event.preventDefault();
@@ -390,6 +444,8 @@ function collectSetsData(exerciseDiv) {
 }
 
 async function submitWorkoutData(exercises) {
+    const selectedDate = document.getElementById('workout-date').value;
+
     const response = await fetch('http://localhost:8000/workout_sessions', {
         method: 'POST',
         headers: {
@@ -398,7 +454,7 @@ async function submitWorkoutData(exercises) {
         },
         body: JSON.stringify({
             exercises: exercises,
-            date: new Date().toISOString()
+            date: selectedDate  // <-- Use selected date from date picker
         })
     });
 
@@ -409,6 +465,7 @@ async function submitWorkoutData(exercises) {
         showAlert(result.detail || "Error saving workout");
     }
 }
+
 
 // Utility functions
 function createButton(text, classes = []) {

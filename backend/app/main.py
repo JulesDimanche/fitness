@@ -22,6 +22,7 @@ from app.schemas import FoodSuggestion,FoodLogUpdate,ExerciseSuggestion
 from fastapi import Query
 from sqlalchemy import cast, Date
 from app.exercise_db import ExerciseSessionLocal
+from sqlalchemy import func
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -476,6 +477,44 @@ async def get_previous_exercise(
         "date": previous_exercise.session.date,
         "sets": previous_sets
     }
+@app.get("/workouts_by_date")
+async def get_workouts_by_date(
+    date: str=None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if date is None:
+        target_date = dt_date.today()
+    else:
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    sessions = (
+        db.query(WorkoutSession)
+        .filter(WorkoutSession.user_id == current_user.id)
+        .filter(func.date(WorkoutSession.date) == target_date)
+        .all()
+    )
+
+    all_logs = []
+    for session in sessions:
+        for exercise in session.exercises:
+            sets = [
+                {
+                    "set_number": s.set_number,
+                    "reps": s.reps,
+                    "weight": s.weight
+                }
+                for s in exercise.sets
+            ]
+            all_logs.append({
+                "exercise_name": exercise.exercise_name,
+                "sets": sets
+            })
+
+    return {"date": target_date, "exercises": all_logs}
 
 @app.get("/search_exercises", response_model=List[ExerciseSuggestion])
 def search_exercises(

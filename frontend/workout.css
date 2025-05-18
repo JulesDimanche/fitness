@@ -22,6 +22,29 @@ form {
     box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
 }
 
+.date-picker-group {
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+input[type="date"] {
+    background-color: #12121b;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+}
+
+input[type="date"]:focus {
+    border-color: #00eaff;
+    box-shadow: 0 0 5px rgba(0, 234, 255, 0.4);
+}
+
 .exercise {
     background-color: #1b1b2a;
     border: 1px solid #28283c;
