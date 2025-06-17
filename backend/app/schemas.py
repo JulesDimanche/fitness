@@ -28,6 +28,13 @@ class WorkoutSessionCreate(BaseModel):
     date: Optional[datetime] = None  # optional, if not given use now
     exercises: List[WorkoutExerciseCreate]
 
+class UpdateWorkoutSet(BaseModel):
+    exercise_name: str
+    set_number: int
+    new_reps: int
+    new_weight: float
+    date: str     
+
 class LogFoodRequest(BaseModel):
     food_name: str
     quantity: float

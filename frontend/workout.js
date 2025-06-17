@@ -369,7 +369,6 @@ async function loadWorkoutsByDate(date) {
     });
 
     const data = await response.json();
-
     const container = document.getElementById("workout-log-container");
     container.innerHTML = ""; // Clear previous
 
@@ -378,19 +377,89 @@ async function loadWorkoutsByDate(date) {
             const exBlock = document.createElement("div");
             exBlock.classList.add("exercise-log");
 
-            let html = `<h4>${exercise.exercise_name}</h4><ul>`;
-            exercise.sets.forEach(set => {
-                html += `<li>${set.reps} reps × ${set.weight} kg</li>`;
-            });
-            html += `</ul>`;
-            exBlock.innerHTML = html;
+            const title = document.createElement("h4");
+            title.textContent = exercise.exercise_name;
+            exBlock.appendChild(title);
 
+            const list = document.createElement("ul");
+
+            exercise.sets.forEach((set, index) => {
+                const listItem = document.createElement("li");
+
+                // Input fields (initially disabled)
+                const repsInput = document.createElement("input");
+                repsInput.type = "number";
+                repsInput.value = set.reps;
+                repsInput.disabled = true;
+
+                const weightInput = document.createElement("input");
+                weightInput.type = "number";
+                weightInput.value = set.weight;
+                weightInput.disabled = true;
+
+                // Edit button
+                const editBtn = document.createElement("button");
+                editBtn.textContent = "Edit";
+                editBtn.classList.add("edit-btn");
+                editBtn.addEventListener("click", () => {
+                    repsInput.disabled = false;
+                    weightInput.disabled = false;
+                });
+
+                // Save button
+                const saveBtn = document.createElement("button");
+                saveBtn.textContent = "Save";
+                saveBtn.classList.add("save-btn");
+                saveBtn.addEventListener("click", async () => {
+                    const newReps = parseInt(repsInput.value);
+                    const newWeight = parseFloat(weightInput.value);
+
+                    const payload = {
+                        exercise_name: exercise.exercise_name,
+                        set_number: index + 1,
+                        new_reps: newReps,
+                        new_weight: newWeight,
+                        date: date
+                    };
+
+                    const updateResponse = await fetch("http://localhost:8000/update_workout_set", {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await updateResponse.json();
+                    if (updateResponse.ok) {
+                        repsInput.disabled = true;
+                        weightInput.disabled = true;
+                        alert("Workout set updated!");
+                    } else {
+                        alert(result.detail || "Update failed");
+                    }
+                });
+
+                // Append everything
+                listItem.appendChild(document.createTextNode(`Set ${index + 1}: `));
+                listItem.appendChild(repsInput);
+                listItem.appendChild(document.createTextNode(" reps × "));
+                listItem.appendChild(weightInput);
+                listItem.appendChild(document.createTextNode(" kg "));
+                listItem.appendChild(editBtn);
+                listItem.appendChild(saveBtn);
+                list.appendChild(listItem);
+            });
+
+            exBlock.appendChild(list);
             container.appendChild(exBlock);
         });
     } else {
         container.innerHTML = "<div class='empty-state'>No workouts logged on this date.</div>";
     }
 }
+
 
 // Form handling
 async function handleFormSubmit(event) {

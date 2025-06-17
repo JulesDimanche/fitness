@@ -18,7 +18,7 @@ from app.auth import create_access_token
 from app.auth import hash_password
 from app.models import WorkoutSession, WorkoutExercise, WorkoutSet,Exercise
 from app.food_db import FoodSessionLocal
-from app.schemas import FoodSuggestion,FoodLogUpdate,ExerciseSuggestion
+from app.schemas import FoodSuggestion,FoodLogUpdate,ExerciseSuggestion, UpdateWorkoutSet
 from fastapi import Query
 from sqlalchemy import cast, Date
 from app.exercise_db import ExerciseSessionLocal
@@ -515,6 +515,55 @@ async def get_workouts_by_date(
             })
 
     return {"date": target_date, "exercises": all_logs}
+
+@app.put("/update_workout_set")
+async def update_workout_set(
+    update_data: UpdateWorkoutSet,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        workout_date = datetime.strptime(update_data.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+
+    session = (
+        db.query(WorkoutSession)
+        .filter(WorkoutSession.user_id == current_user.id)
+        .filter(func.date(WorkoutSession.date) == workout_date)
+        .first()
+    )
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Workout session not found")
+
+    exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.session_id == session.id)
+        .filter(WorkoutExercise.exercise_name == update_data.exercise_name)
+        .first()
+    )
+
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    workout_set = (
+        db.query(WorkoutSet)
+        .filter(WorkoutSet.exercise_id == exercise.id)
+        .filter(WorkoutSet.set_number == update_data.set_number)
+        .first()
+    )
+
+    if not workout_set:
+        raise HTTPException(status_code=404, detail="Workout set not found")
+
+    workout_set.reps = update_data.new_reps
+    workout_set.weight = update_data.new_weight
+
+    db.commit()
+    db.refresh(workout_set)
+
+    return {"message": "Workout set updated successfully"}
 
 @app.get("/search_exercises", response_model=List[ExerciseSuggestion])
 def search_exercises(
