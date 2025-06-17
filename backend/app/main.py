@@ -565,6 +565,87 @@ async def update_workout_set(
 
     return {"message": "Workout set updated successfully"}
 
+@app.delete("/delete_workout_set")
+async def delete_workout_set(
+    exercise_name: str,
+    set_number: int,
+    date: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        session_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format.")
+
+    # Find the correct session
+    session = (
+        db.query(WorkoutSession)
+        .filter_by(user_id=current_user.id)
+        .filter(func.date(WorkoutSession.date) == session_date)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Workout session not found.")
+
+    # Find the exercise
+    exercise = (
+        db.query(WorkoutExercise)
+        .filter_by(session_id=session.id, exercise_name=exercise_name)
+        .first()
+    )
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found.")
+
+    # Find the set to delete
+    workout_set = (
+        db.query(WorkoutSet)
+        .filter_by(exercise_id=exercise.id, set_number=set_number)
+        .first()
+    )
+    if not workout_set:
+        raise HTTPException(status_code=404, detail="Set not found.")
+
+    db.delete(workout_set)
+    db.commit()
+
+    return {"message": "Workout set deleted successfully"}
+
+@app.delete("/delete_exercise")
+async def delete_exercise(
+    exercise_name: str,
+    date: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        session_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+
+    session = (
+        db.query(WorkoutSession)
+        .filter(WorkoutSession.user_id == current_user.id)
+        .filter(func.date(WorkoutSession.date) == session_date)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Workout session not found")
+
+    exercise = (
+        db.query(WorkoutExercise)
+        .filter(WorkoutExercise.session_id == session.id)
+        .filter(WorkoutExercise.exercise_name == exercise_name)
+        .first()
+    )
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    db.delete(exercise)
+    db.commit()
+    return {"message": "Exercise deleted successfully"}
+
+
 @app.get("/search_exercises", response_model=List[ExerciseSuggestion])
 def search_exercises(
     query: str, 

@@ -449,6 +449,68 @@ async function loadWorkoutsByDate(date) {
                 listItem.appendChild(document.createTextNode(" kg "));
                 listItem.appendChild(editBtn);
                 listItem.appendChild(saveBtn);
+
+                // Delete button
+                const deleteBtn = document.createElement("button");
+deleteBtn.textContent = "Delete";
+deleteBtn.classList.add("delete-btn");
+
+deleteBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to delete this set?")) return;
+
+    const url = new URL("http://localhost:8000/delete_workout_set");
+    url.searchParams.append("exercise_name", exercise.exercise_name);
+    url.searchParams.append("set_number", index + 1);
+    url.searchParams.append("date", date);
+
+    const res = await fetch(url, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (res.ok) {
+        alert("Set deleted successfully");
+        loadWorkoutsByDate(date); // Refresh the displayed workout data
+    } else {
+        const err = await res.json();
+        alert("Error deleting set: " + err.detail);
+    }
+});
+
+
+                listItem.appendChild(deleteBtn);
+const deleteExerciseBtn = document.createElement("button");
+deleteExerciseBtn.textContent = "Delete Exercise";
+deleteExerciseBtn.classList.add("delete-exercise-btn");
+
+deleteExerciseBtn.addEventListener("click", async () => {
+    if (!confirm(`Delete entire "${exercise.exercise_name}" from this day?`)) return;
+
+    const url = new URL("http://localhost:8000/delete_exercise");
+    url.searchParams.append("exercise_name", exercise.exercise_name);
+    url.searchParams.append("date", date);
+
+    const res = await fetch(url, {
+        method: "DELETE",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (res.ok) {
+        alert("Exercise deleted successfully.");
+        loadWorkoutsByDate(date);  // Refresh UI
+    } else {
+        const err = await res.json();
+        alert("Failed to delete: " + err.detail);
+    }
+});
+
+// Add this button to the exercise log
+exBlock.appendChild(deleteExerciseBtn);
+
                 list.appendChild(listItem);
             });
 
