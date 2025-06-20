@@ -95,6 +95,39 @@ class WorkoutSet(Base):
 
     exercise = relationship("WorkoutExercise", back_populates="sets")
 
+class WorkoutTemplate(Base):
+    __tablename__ = "workout_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String, nullable=False)
+
+    exercises = relationship("WorkoutTemplateExercise", back_populates="template", cascade="all, delete")
+
+
+class WorkoutTemplateExercise(Base):
+    __tablename__ = "workout_template_exercises"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("workout_templates.id"))
+    exercise_name = Column(String, nullable=False)
+
+    sets = relationship("WorkoutTemplateSet", back_populates="exercise", cascade="all, delete")
+    template = relationship("WorkoutTemplate", back_populates="exercises")
+
+
+class WorkoutTemplateSet(Base):
+    __tablename__ = "workout_template_sets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    exercise_id = Column(Integer, ForeignKey("workout_template_exercises.id"))
+    set_number = Column(Integer)
+    reps = Column(Integer)
+    weight = Column(Float)
+
+    exercise = relationship("WorkoutTemplateExercise", back_populates="sets")
+
+
 class UserConsumption(Base):
     __tablename__ = 'user_consumption'
 

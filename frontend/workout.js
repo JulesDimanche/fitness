@@ -6,29 +6,372 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global variables
 let exerciseCount = 0;
 const token = localStorage.getItem("token");
+let currentTemplateId = null;
 
 // Main initialization function
 function initWorkoutTracker() {
-    // Check authentication
     if (!token) {
         redirectToLogin();
         return;
     }
+    document.getElementById("workout-date").addEventListener("change", () => {
+    // Reset routine state
+    currentTemplateId = null;
+    document.getElementById("routine-name").value = "";
+    document.getElementById("template-selector").value = ""; // reset dropdown
+    document.querySelector("input[name='routine-mode'][value='new']").checked = true;
 
-    // Create first exercise
+    // Clear and start fresh
+    document.getElementById("exercises-container").innerHTML = "";
     addExercise();
+});
+    // Set up routine mode toggle
+    document.querySelectorAll("input[name='routine-mode']").forEach(radio => {
+        radio.addEventListener("change", (e) => {
+            const isTemplate = e.target.value === "template";
+            document.getElementById("template-select-group").style.display = isTemplate ? "block" : "none";
+            document.getElementById("update-template-btn").style.display = isTemplate ? "inline-block" : "none";
+            if (!isTemplate) {
+                currentTemplateId = null;
+                document.getElementById("routine-name").value = "";
+                document.getElementById("exercises-container").innerHTML = "";
+                addExercise();
+            }
+        });
+    });
 
-    // Add exercise button
-    const addExerciseBtn = createButton('+ Add Exercise', ['btn', 'add-exercise-btn']);
-    addExerciseBtn.addEventListener('click', addExercise);
-    document.querySelector('form').insertBefore(
-        addExerciseBtn, 
-        document.getElementById('exercises-container')
-    );
-
-    // Form submission handler
     document.getElementById("workout-form").addEventListener("submit", handleFormSubmit);
+    document.getElementById("save-template-btn").addEventListener("click", handleSaveTemplate);
+    document.getElementById("update-template-btn").addEventListener("click", handleUpdateTemplate);
+
+    populateTemplateDropdown();
+    const templateSelector = document.getElementById("template-selector");
+templateSelector.addEventListener("change", (e) => {
+    const templateId = e.target.value;
+    console.log("🔄 Loading template ID:", templateId);
+    if (templateId) {
+        loadTemplate(templateId);
+    }
+});
+    addExercise();
 }
+async function handleUpdateTemplate() {
+    if (!currentTemplateId) {
+        alert("No template loaded.");
+        return;
+    }
+
+    const name = document.getElementById("routine-name").value.trim();
+    if (!name) return alert("Routine name is required.");
+
+    const exercises = collectExerciseData();
+    if (exercises.length === 0) return alert("Add at least one exercise with sets.");
+
+    const res = await fetch(`http://localhost:8000/workout_templates/${currentTemplateId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ name, exercises })
+    });
+
+    if (res.ok) {
+        alert("Template updated.");
+        populateTemplateDropdown();
+    } else {
+        alert("Failed to update template.");
+    }
+}
+
+
+async function handleSaveTemplate(e) {
+  e.preventDefault();
+  console.log("💾 Save Template button clicked");
+
+  const templateName = document.getElementById("routine-name").value.trim();
+  if (!templateName) {
+    alert("Please enter a name for your routine.");
+    return;
+  }
+
+  const exercises = [];
+  const exerciseBlocks = document.querySelectorAll(".exercise");
+  console.log(`Found ${exerciseBlocks.length} exercise blocks`);
+
+  exerciseBlocks.forEach((exerciseBlock, i) => {
+    const exerciseNameInput = exerciseBlock.querySelector(".exercise-name-input");
+    const exerciseName = exerciseNameInput ? exerciseNameInput.value : null;
+
+    if (!exerciseName) {
+      console.warn(`Exercise ${i + 1} has no name. Skipping.`);
+      return;
+    }
+
+    const sets = [];
+    const setRows = exerciseBlock.querySelectorAll(".set");
+
+    setRows.forEach((setRow, index) => {
+      const repsInput = setRow.querySelector(".reps-input");
+      const weightInput = setRow.querySelector(".weight-input");
+
+      if (!repsInput || !weightInput) return;
+
+      const reps = parseInt(repsInput.value);
+      const weight = parseFloat(weightInput.value);
+
+      console.log(`➤ Found set with reps: ${repsInput?.value}, weight: ${weightInput?.value}`);
+
+      if (!isNaN(reps) && !isNaN(weight)) {
+        sets.push({ set_number: index + 1, reps, weight });
+      } else {
+        console.warn(`Invalid set: reps=${reps}, weight=${weight}`);
+      }
+    });
+
+    if (sets.length > 0) {
+      exercises.push({ exercise_name: exerciseName, sets });
+    } else {
+      console.warn(`Exercise "${exerciseName}" has no valid sets. Skipping.`);
+    }
+  });
+
+  const payload = {
+    name: templateName,
+    exercises: exercises
+  };
+
+  console.log("📦 Final payload to send:", JSON.stringify(payload, null, 2));
+
+  if (!token) {
+    console.error("❌ No token found. Cannot send request.");
+    return;
+  }
+
+  try {
+    const url = currentTemplateId
+      ? `http://localhost:8000/workout_templates/${currentTemplateId}`  // Update template
+      : `http://localhost:8000/save_template`;                          // Create new
+
+    const method = currentTemplateId ? "PUT" : "POST";
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    console.log("📡 Response status:", response.status);
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error("❌ Server responded with error:", err);
+      alert("Failed to save template.");
+      return;
+    }
+
+    const resData = await response.json();
+    console.log("✅ Template saved successfully:", resData);
+    alert(currentTemplateId ? "Template updated!" : "Template saved!");
+    populateTemplateDropdown(); // Refresh the dropdown
+  } catch (error) {
+    console.error("🚨 Network or fetch error:", error);
+    alert("Error saving template. Check console.");
+  }
+}
+
+
+async function populateTemplateDropdown() {
+    const dropdown = document.getElementById("template-selector");
+    if (!dropdown) {
+        console.warn("Dropdown element #template-selector not found.");
+        return;
+    }
+
+    dropdown.innerHTML = `<option value="">-- Select a Template --</option>`;
+
+    try {
+        const res = await fetch("http://localhost:8000/workout_templates", {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("Failed to fetch templates:", errorText);
+            alert("Failed to fetch templates.");
+            return;
+        }
+
+        const data = await res.json();
+
+        if (!Array.isArray(data)) {
+            console.error("Invalid template data format:", data);
+            alert("Invalid template data received.");
+            return;
+        }
+
+        data.forEach(template => {
+            const option = document.createElement("option");
+            option.value = template.id;
+            option.textContent = template.name;
+            dropdown.appendChild(option);
+        });
+
+        console.log("✅ Templates loaded:", data);
+    } catch (error) {
+        console.error("🚨 Error fetching templates:", error);
+        alert("Could not load templates. Please try again later.");
+    }
+}
+async function loadTemplate(templateId) {
+    console.log("🔄 Loading template ID:", templateId);
+
+    if (!templateId) {
+        console.warn("No template ID provided.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`http://localhost:8000/workout_templates/${templateId}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            console.error("❌ Failed to load template:", err);
+            alert("Failed to load template.");
+            return;
+        }
+
+        const data = await res.json();
+
+        // Set state
+        currentTemplateId = templateId;
+        document.getElementById("routine-name").value = data.name || "";
+
+        const exercisesContainer = document.getElementById("exercises-container");
+        exercisesContainer.innerHTML = ""; // Clear previous content
+
+        if (!Array.isArray(data.exercises) || data.exercises.length === 0) {
+            console.warn("⚠️ No exercises found in this template.");
+            return;
+        }
+
+        data.exercises.forEach((exercise, exIdx) => {
+            const exerciseDiv = createExerciseContainer();
+            const nameGroup = createExerciseNameInput(exerciseDiv.id);
+            const setsContainer = createSetsContainer();
+
+            nameGroup.querySelector("input").value = exercise.exercise_name;
+
+            if (Array.isArray(exercise.sets)) {
+                const newSetsContent = setsContainer.querySelector('.new-sets-content');
+                exercise.sets.forEach((set, i) => {
+                    const setDiv = createSetInput(set.set_number, set.reps, set.weight);
+                    newSetsContent.appendChild(setDiv);
+                });
+                updateSetNumbers(newSetsContent);
+
+            }
+
+            exerciseDiv.appendChild(nameGroup);
+            exerciseDiv.appendChild(setsContainer);
+            exerciseDiv.appendChild(createAddSetButton(exerciseDiv.id, setsContainer));
+
+            exercisesContainer.appendChild(exerciseDiv);
+        });
+
+        console.log("✅ Template loaded:", data.name);
+    } catch (error) {
+        console.error("🚨 Error loading template:", error);
+        alert("An error occurred while loading the template.");
+    }
+}
+
+
+function createSetInput(setNumber = 1, reps = "", weight = "") {
+    const setDiv = document.createElement("div");
+    setDiv.classList.add("set");
+
+    const repsInput = document.createElement("input");
+    repsInput.type = "number";
+    repsInput.placeholder = "Reps";
+    repsInput.value = reps;
+    repsInput.classList.add("reps-input");
+
+    const weightInput = document.createElement("input");
+    weightInput.type = "number";
+    weightInput.placeholder = "Weight (kg)";
+    weightInput.value = weight;
+    weightInput.classList.add("weight-input");
+
+    setDiv.appendChild(repsInput);
+    setDiv.appendChild(weightInput);
+
+    return setDiv;
+}
+function updateSetNumbers(container) {
+    const sets = container.querySelectorAll('.set');
+    sets.forEach((setDiv, idx) => {
+        const label = setDiv.querySelector('span');
+        if (label) label.textContent = `Set ${idx + 1}:`;
+    });
+}
+/*async function handleSaveTemplate() {
+    const exercises = [];
+
+    document.querySelectorAll(".exercise").forEach((exDiv) => {
+        const nameInput = exDiv.querySelector(".exercise-name-input");
+        if (!nameInput || !nameInput.value.trim()) return;
+
+        const exerciseName = nameInput.value.trim();
+        const sets = [];
+
+        exDiv.querySelectorAll(".set").forEach((setDiv, index) => {
+            const repsInput = setDiv.querySelector(".reps-input");
+            const weightInput = setDiv.querySelector(".weight-input");
+
+            if (!repsInput || !weightInput) return;
+
+            const reps = parseInt(repsInput.value);
+            const weight = parseFloat(weightInput.value);
+
+            if (!isNaN(reps) && !isNaN(weight)) {
+                sets.push({ set_number: index + 1, reps, weight });
+            }
+        });
+
+        if (sets.length > 0) {
+            exercises.push({ exercise_name: exerciseName, sets });
+        }
+    });
+
+    const templateName = prompt("Enter a name for your template:");
+    if (!templateName || !exercises.length) return;
+
+    const res = await fetch("http://localhost:8000/save_template", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+            name: templateName,
+            exercises,
+        }),
+    });
+
+    const data = await res.json();
+    alert(data.message || "Template saved!");
+}*/
+
 
 // Exercise creation and management
 function addExercise() {
@@ -221,6 +564,7 @@ function createNumberInput(name, placeholder, min, step = 1) {
     input.placeholder = placeholder;
     input.min = min.toString();
     if (step) input.step = step.toString();
+    input.classList.add(`${name}-input`); 
     return input;
 }
 
@@ -529,15 +873,29 @@ async function handleFormSubmit(event) {
 
     const exercises = collectExerciseData();
     if (exercises.length === 0) {
-        showAlert("Please add at least one exercise with sets");
+        alert("Please add at least one exercise with sets");
         return;
     }
 
-    try {
-        await submitWorkoutData(exercises);
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert("Failed to save workout");
+    const date = document.getElementById("workout-date").value;
+    const payload = { date, exercises };
+
+    const res = await fetch("http://localhost:8000/workout_sessions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        alert("Workout logged!");
+        loadWorkoutsByDate(date);
+        document.getElementById("workout-date").value = date;
+
+    } else {
+        alert("Error logging workout");
     }
 }
 
@@ -559,9 +917,11 @@ function collectExerciseData() {
 
 function collectSetsData(exerciseDiv) {
     const sets = [];
-    exerciseDiv.querySelectorAll(".new-sets .set").forEach((setDiv, idx) => {
-        const repsInput = setDiv.querySelector("input[name='reps']");
-        const weightInput = setDiv.querySelector("input[name='weight']");
+    exerciseDiv.querySelectorAll(".set").forEach((setDiv, idx) => {
+        const repsInput = setDiv.querySelector("input[name='reps']") 
+                       || setDiv.querySelector(".reps-input");
+        const weightInput = setDiv.querySelector("input[name='weight']") 
+                         || setDiv.querySelector(".weight-input");
 
         if (repsInput?.value && weightInput?.value) {
             sets.push({

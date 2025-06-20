@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-from app.models import UserData
+from app.models import UserData, WorkoutTemplate, WorkoutTemplateExercise, WorkoutTemplateSet
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import models, schemas, auth
@@ -644,6 +644,112 @@ async def delete_exercise(
     db.delete(exercise)
     db.commit()
     return {"message": "Exercise deleted successfully"}
+
+@app.post("/save_template")
+async def save_template(
+    template_data: schemas.WorkoutTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    print("Received template:", template_data)
+    template = WorkoutTemplate(user_id=current_user.id, name=template_data.name)
+
+    for ex in template_data.exercises:
+        ex_model = WorkoutTemplateExercise(exercise_name=ex.exercise_name)
+        for s in ex.sets:
+            ex_model.sets.append(
+                WorkoutTemplateSet(set_number=s.set_number, reps=s.reps, weight=s.weight)
+            )
+        template.exercises.append(ex_model)
+
+    db.add(template)
+    db.commit()
+    db.refresh(template)
+    print("Template saved.")
+
+    return {"message": "Template saved", "template_id": template.id}
+
+@app.put("/workout_templates/{template_id}")
+async def update_template(
+    template_id: int,
+    updated_data: schemas.WorkoutTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    print(f"🔄 Updating template ID {template_id}")
+
+    # Fetch the template owned by current user
+    template = (
+        db.query(WorkoutTemplate)
+        .filter_by(id=template_id, user_id=current_user.id)
+        .first()
+    )
+
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # Update template name
+    template.name = updated_data.name
+
+    # Clear old exercises & sets (via cascade delete)
+    for exercise in template.exercises:
+        db.delete(exercise)
+
+    db.commit()
+
+    # Add new exercises and sets
+    for ex in updated_data.exercises:
+        ex_model = WorkoutTemplateExercise(exercise_name=ex.exercise_name)
+        for s in ex.sets:
+            ex_model.sets.append(
+                WorkoutTemplateSet(set_number=s.set_number, reps=s.reps, weight=s.weight)
+            )
+        template.exercises.append(ex_model)
+
+    db.commit()
+    db.refresh(template)
+
+    print(f"✅ Template {template_id} updated")
+    return {"message": "Template updated", "template_id": template.id}
+
+
+@app.get("/workout_templates", response_model=List[schemas.WorkoutTemplateOut])
+async def get_templates(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    templates = db.query(WorkoutTemplate).filter_by(user_id=current_user.id).all()
+    return templates
+
+
+@app.get("/workout_templates/{template_id}")
+async def get_template(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    template = (
+        db.query(WorkoutTemplate)
+        .filter_by(id=template_id, user_id=current_user.id)
+        .first()
+    )
+
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    return {
+        "name": template.name,
+        "exercises": [
+            {
+                "exercise_name": ex.exercise_name,
+                "sets": [
+                    {"set_number": s.set_number, "reps": s.reps, "weight": s.weight}
+                    for s in ex.sets
+                ]
+            }
+            for ex in template.exercises
+        ]
+    }
 
 
 @app.get("/search_exercises", response_model=List[ExerciseSuggestion])

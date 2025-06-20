@@ -1,28 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workout Tracker</title>
-    <link rel="stylesheet" href="workout.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Tracker</title>
+  <link rel="stylesheet" href="workout.css">
+  <style>
+    .btn {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: #2196F3; color: white; }
+    .btn-secondary { background: #607d8b; color: white; }
+    .add-exercise-btn { background: #4CAF50; color: white; }
+
+    #template-selector, #routine-name {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    .form-group {
+      margin: 10px 0;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
+  <div class="container">
     <h1>Workout Tracker</h1>
+
+    <!-- Routine Mode Selection -->
+    <div class="form-group">
+      <label><strong>Routine Mode:</strong></label><br>
+      <input type="radio" name="routine-mode" value="new" checked> Start New Routine
+      <input type="radio" name="routine-mode" value="template"> Load Existing Routine
+    </div>
+
+    <!-- Template Selector (hidden initially) -->
+    <div class="form-group" id="template-select-group" style="display: none;">
+      <label for="template-selector">Select Template:</label>
+      <select id="template-selector" class="form-control">
+        <option value="">-- Select a Template --</option>
+      </select>
+    </div>
+
+    <!-- Routine Name Field -->
+    <div class="form-group">
+      <label for="routine-name">Routine Name:</label>
+      <input type="text" id="routine-name" placeholder="e.g., Push Day, Pull Day" />
+    </div>
+
     <form id="workout-form">
-        <div class="date-picker-group">
-            <label for="workout-date">Workout Date:</label>
-            <input type="date" id="workout-date" name="workout_date" required>
-        </div>
-        <div id="exercises-container"></div>
-        <button type="submit" class="btn btn-primary">Save Workout</button>
+      <div class="date-picker-group">
+        <label for="workout-date">Workout Date:</label>
+        <input type="date" id="workout-date" name="workout_date" required>
+      </div>
+
+      <div id="exercises-container"></div>
+
+      <!-- Workout Action Buttons -->
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary">📥 Log Workout</button>
+        <button type="button" id="save-template-btn" class="btn btn-secondary">💾 Save as New Template</button>
+        <button type="button" id="update-template-btn" class="btn btn-secondary" style="display: none;">♻️ Update Loaded Template</button>
+      </div>
     </form>
 
-    <!-- 🛠 Add this -->
     <div id="workout-log-container" class="workout-log-section"></div>
-</div>
+  </div>
 
-
-    <script src="workout.js"></script>
+  <script src="workout.js"></script>
 </body>
 </html>

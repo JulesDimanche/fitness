@@ -33,7 +33,47 @@ class UpdateWorkoutSet(BaseModel):
     set_number: int
     new_reps: int
     new_weight: float
-    date: str     
+    date: str 
+
+class TemplateSet(BaseModel):
+    set_number: int
+    reps: int
+    weight: float
+
+class TemplateExercise(BaseModel):
+    exercise_name: str
+    sets: List[TemplateSet]
+
+class WorkoutTemplateCreate(BaseModel):
+    name: str
+    exercises: List[TemplateExercise]
+
+class TemplateSetOut(BaseModel):
+    set_number: int
+    reps: int
+    weight: float
+
+    class Config:
+        orm_mode = True
+
+
+class TemplateExerciseOut(BaseModel):
+    exercise_name: str
+    sets: List[TemplateSetOut]
+
+    class Config:
+        orm_mode = True
+
+
+class WorkoutTemplateOut(BaseModel):
+    id: int
+    name: str
+    exercises: List[TemplateExerciseOut]
+
+    class Config:
+        orm_mode = True
+
+    
 
 class LogFoodRequest(BaseModel):
     food_name: str
