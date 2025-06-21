@@ -54,6 +54,8 @@ templateSelector.addEventListener("change", (e) => {
     }
 });
     addExercise();
+    document.getElementById("add-exercise-btn").addEventListener("click", addExercise);
+
 }
 async function handleUpdateTemplate() {
     if (!currentTemplateId) {
@@ -324,55 +326,6 @@ function updateSetNumbers(container) {
         if (label) label.textContent = `Set ${idx + 1}:`;
     });
 }
-/*async function handleSaveTemplate() {
-    const exercises = [];
-
-    document.querySelectorAll(".exercise").forEach((exDiv) => {
-        const nameInput = exDiv.querySelector(".exercise-name-input");
-        if (!nameInput || !nameInput.value.trim()) return;
-
-        const exerciseName = nameInput.value.trim();
-        const sets = [];
-
-        exDiv.querySelectorAll(".set").forEach((setDiv, index) => {
-            const repsInput = setDiv.querySelector(".reps-input");
-            const weightInput = setDiv.querySelector(".weight-input");
-
-            if (!repsInput || !weightInput) return;
-
-            const reps = parseInt(repsInput.value);
-            const weight = parseFloat(weightInput.value);
-
-            if (!isNaN(reps) && !isNaN(weight)) {
-                sets.push({ set_number: index + 1, reps, weight });
-            }
-        });
-
-        if (sets.length > 0) {
-            exercises.push({ exercise_name: exerciseName, sets });
-        }
-    });
-
-    const templateName = prompt("Enter a name for your template:");
-    if (!templateName || !exercises.length) return;
-
-    const res = await fetch("http://localhost:8000/save_template", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-            name: templateName,
-            exercises,
-        }),
-    });
-
-    const data = await res.json();
-    alert(data.message || "Template saved!");
-}*/
-
-
 // Exercise creation and management
 function addExercise() {
     const exerciseDiv = createExerciseContainer();
@@ -382,6 +335,8 @@ function addExercise() {
     exerciseDiv.appendChild(nameGroup);
     exerciseDiv.appendChild(setsContainer);
     exerciseDiv.appendChild(createAddSetButton(exerciseDiv.id, setsContainer));
+    exerciseDiv.appendChild(createRemoveExerciseButton(exerciseDiv));
+
 
     document.getElementById('exercises-container').appendChild(exerciseDiv);
 }
@@ -458,6 +413,20 @@ function createAddSetButton(exerciseId, setsContainer) {
         addNewSet(setsContainer.querySelector('.new-sets-content'), exerciseId);
     });
     return addSetButton;
+}
+function createRemoveExerciseButton(exerciseDiv) {
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.textContent = "❌ Remove Exercise";
+  removeBtn.classList.add("btn", "remove-exercise-btn");
+
+  removeBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to delete this exercise?")) {
+      exerciseDiv.remove();
+    }
+  });
+
+  return removeBtn;
 }
 
 // Autocomplete functionality
