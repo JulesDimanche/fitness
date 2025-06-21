@@ -8,6 +8,13 @@ let exerciseCount = 0;
 const token = localStorage.getItem("token");
 let currentTemplateId = null;
 
+document.getElementById("logout-btn").addEventListener("click", () => {
+  if (confirm("Logout from your session?")) {
+    localStorage.removeItem("token");
+    window.location.href = "/login.html";
+  }
+});
+
 // Main initialization function
 function initWorkoutTracker() {
     if (!token) {
