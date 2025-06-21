@@ -750,6 +750,19 @@ async def get_template(
             for ex in template.exercises
         ]
     }
+@app.delete("/workout_templates/{template_id}")
+async def delete_template(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    template = db.query(WorkoutTemplate).filter_by(id=template_id, user_id=current_user.id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    db.delete(template)
+    db.commit()
+    return {"message": "Template deleted"}
 
 
 @app.get("/search_exercises", response_model=List[ExerciseSuggestion])

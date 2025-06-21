@@ -340,6 +340,41 @@ function addExercise() {
 
     document.getElementById('exercises-container').appendChild(exerciseDiv);
 }
+document.getElementById("delete-template-btn").addEventListener("click", async () => {
+  const templateId = document.getElementById("template-selector").value;
+  if (!templateId) {
+    alert("Please select a template to delete.");
+    return;
+  }
+
+  const confirmDelete = confirm("Are you sure you want to delete this template?");
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`http://localhost:8000/workout_templates/${templateId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (res.ok) {
+      alert("Template deleted.");
+      currentTemplateId = null;
+      document.getElementById("template-selector").value = "";
+      document.getElementById("routine-name").value = "";
+      document.getElementById("exercises-container").innerHTML = "";
+      addExercise();
+      populateTemplateDropdown();
+    } else {
+      const error = await res.text();
+      alert("Failed to delete template:\n" + error);
+    }
+  } catch (err) {
+    console.error("Error deleting template:", err);
+    alert("An error occurred while deleting the template.");
+  }
+});
 
 function createExerciseContainer() {
     const exerciseDiv = document.createElement('div');
