@@ -17,7 +17,12 @@ let selectedServingGrams = null;
 
 // Initialize view date input with today's date
 viewDateInput.valueAsDate = new Date();
-
+document.getElementById("logout-btn").addEventListener("click", () => {
+  if (confirm("Logout from your session?")) {
+    localStorage.removeItem("token");
+    window.location.href = "/login.html";
+  }
+});
 // Toggle between quantity and grams input
 inputTypeSelect.addEventListener("change", function () {
     const selectedValue = inputTypeSelect.value;
