@@ -50,20 +50,15 @@
         <div id="serving_info" style="margin-top: 8px; font-style: italic;"></div>
         <div id="total_grams_info"></div>
 
-        <label for="use_today">
-            <input type="checkbox" id="use_today" checked />
-                Use today's date
-        </label>
-
-        <label for="custom_date">Or choose a custom date:</label>
-        <input type="date" id="custom_date" />
+        
 
         <button type="submit">Log Food</button>
 
-        <label for="view_date">View Logs For:</label>
-            <input type="date" id="view_date" />
+        <div class="date-slider-container">
+        <div id="date-slider" class="date-slider">
+        </div>
+        </div>
 
-            <button id="load_logs">Load Food Logs</button>
 
             <div id="food_logs_display" style="margin-top: 10px;"></div>
             </div>           

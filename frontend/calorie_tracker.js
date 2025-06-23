@@ -6,17 +6,17 @@ const suggestionsDiv = document.getElementById("suggestions");
 const servingInfo = document.getElementById("serving_info");
 const totalGramsInfo = document.getElementById("total_grams_info");
 const inputTypeSelect = document.getElementById("input_type");
-const useTodayCheckbox = document.getElementById("use_today");
-const customDateInput = document.getElementById("custom_date");
-const viewDateInput = document.getElementById("view_date");
-const loadLogsButton = document.getElementById("load_logs");
+//const useTodayCheckbox = document.getElementById("use_today");
+//const customDateInput = document.getElementById("custom_date");
+//const viewDateInput = document.getElementById("view_date");
+//const loadLogsButton = document.getElementById("load_logs");
 const foodLogsDisplay = document.getElementById("food_logs_display");
 
 let activeInput = null;
 let selectedServingGrams = null;
 
 // Initialize view date input with today's date
-viewDateInput.valueAsDate = new Date();
+//viewDateInput.valueAsDate = new Date();
 document.getElementById("logout-btn").addEventListener("click", () => {
   if (confirm("Logout from your session?")) {
     localStorage.removeItem("token");
@@ -155,9 +155,8 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
     }
 
     // Determine date to use
-    const dateToUse = useTodayCheckbox.checked 
-        ? new Date().toISOString().split("T")[0] 
-        : customDateInput.value;
+    const dateToUse = selectedSliderDate;
+
     try {
         const response = await fetch("http://localhost:8000/log-food", {
             method: "POST",
@@ -188,12 +187,18 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
             selectedServingGrams = null;
             
             document.querySelector("#logFoodForm button[type='submit']").textContent = "Log Food";
+            await loadAndRenderLogs(selectedSliderDate);
 
 
             // Set viewDateInput to same date and auto-refresh logs
-            console.log("View Date Input: ", viewDateInput.value); // Check if the date is correct
-            viewDateInput.value = dateToUse;
-            await loadAndRenderLogs(dateToUse);
+            //console.log("View Date Input: ", viewDateInput.value); // Check if the date is correct
+            selectedSliderDate = dateToUse;
+            //await loadAndRenderLogs(selectedSliderDate);
+            const todayBtn = document.querySelector(`.date-button[data-date="${selectedSliderDate}"]`);
+            //console.log("Highlighting date button:", selectedSliderDate, todayBtn);
+            if (todayBtn) todayBtn.classList.add("has-log");
+
+
         }
     } catch (err) {
         resultText.textContent = "❌ Network error or server down";
@@ -202,9 +207,9 @@ document.getElementById("logFoodForm").addEventListener("submit", async function
 
 
 // Load logs on button click
-loadLogsButton.addEventListener("click", function (e) {
+/*loadLogsButton.addEventListener("click", function (e) {
     e.preventDefault();
-    const viewDate = viewDateInput.value;
+    const viewDate = selectedSliderDate;
     loadFoodLog(viewDate);
 });
 
@@ -212,7 +217,7 @@ loadLogsButton.addEventListener("click", function (e) {
 viewDateInput.addEventListener("change", function () {
     const selectedDate = viewDateInput.value;
     loadFoodLog(selectedDate);
-});
+});*/
 
 // Reusable food log loader
 async function loadFoodLog(date) {
@@ -403,7 +408,7 @@ function renderFoodLogs(logs) {
                 .then(({ ok, data }) => {
                     if (ok) {
                         // Reload logs after saving
-                        const viewDate = viewDateInput.value;
+const viewDate = selectedSliderDate;
                         loadAndRenderLogs(viewDate);
                     } else {
                         alert("❌ Update failed: " + (data.detail || "Unknown error"));
@@ -442,7 +447,7 @@ function renderFoodLogs(logs) {
             .then(({ ok, data }) => {
                 if (ok) {
                     alert("✅ Food log deleted successfully");
-                    const viewDate = viewDateInput.value;
+const viewDate = selectedSliderDate;
                     loadAndRenderLogs(viewDate);
                 } else {
                     alert("❌ Deletion failed: " + (data.detail || "Unknown error"));
@@ -476,6 +481,26 @@ async function loadAndRenderLogs(date) {
     } catch (err) {
         foodLogsDisplay.innerHTML = `❌ Error: ${err.message}`;
     }
+}
+let loggedDates = new Set();
+
+async function fetchLoggedDates() {
+  try {
+    const res = await fetch("http://localhost:8000/logged-dates", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      const dates = await res.json();
+      const normalized = dates.map(d => d.split(" ")[0]);
+
+      loggedDates = new Set(normalized); // store for use in the slider
+    } else {
+      console.warn("Failed to fetch logged dates");
+    }
+  } catch (err) {
+    console.error("Error fetching logged dates:", err);
+  }
 }
 
 function editFoodLog(logId) {
@@ -529,7 +554,7 @@ async function saveFoodLog(logId) {
 
 
 // Handle "Use Today's Date" checkbox
-useTodayCheckbox.addEventListener("change", function () {
+/*useTodayCheckbox.addEventListener("change", function () {
     if (useTodayCheckbox.checked) {
         customDateInput.value = "";
         customDateInput.disabled = true;
@@ -537,12 +562,69 @@ useTodayCheckbox.addEventListener("change", function () {
     } else {
         customDateInput.disabled = false;
     }
-});
+});*/
+ const dateSlider = document.getElementById("date-slider");
+  let selectedSliderDate = new Date().toISOString().split("T")[0]; // Default today
+
+  function formatDate(date) {
+    return date.toISOString().split("T")[0];
+  }
+
+  async function createDateButtons() {
+  const today = new Date();
+  const dateSlider = document.getElementById("date-slider");
+
+  const pastDays = 90;   // approx 3 months
+  const futureDays = 7;  // optional future scroll
+  
+  let todayButton = null;
+  await fetchLoggedDates();
+  for (let i = -pastDays; i <= futureDays; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const dateStr = formatDate(date);
+
+    const btn = document.createElement("div");
+    btn.className = "date-button";
+    btn.dataset.date = dateStr;
+    btn.innerHTML = `
+      <div>${date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+      <div>${date.getDate()}</div>
+    `;
+    if (loggedDates.has(dateStr)) {
+      btn.classList.add("has-log");
+    }
+
+    if (i === 0) {btn.classList.add("active");
+        todayButton = btn;
+    }
+
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".date-button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedSliderDate = dateStr;
+      loadAndRenderLogs(dateStr);
+    });
+
+    dateSlider.appendChild(btn);
+  }
+  if (todayButton) {
+    setTimeout(() => {
+      todayButton.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }, 0);
+  }
+}
+
+
+  createDateButtons();
 
 // Load today's food log on page load
-window.addEventListener("load", () => {
+window.addEventListener("load",async () => {
     const today = new Date().toISOString().split("T")[0];
-    viewDateInput.value = today;
-    loadAndRenderLogs(today);
+    selectedSliderDate = today;
+    await createDateButtons();
+await loadAndRenderLogs(selectedSliderDate);
+
 
 });
+ 

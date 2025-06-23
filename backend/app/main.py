@@ -963,3 +963,13 @@ def delete_food_log(
     db.commit()
 
     return {"message": "Food log deleted successfully"}
+@app.get("/logged-dates")
+def get_logged_dates(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = (
+        db.query(UserConsumption.consumed_at)
+        .filter(UserConsumption.user_id == user.id)
+        .distinct()
+        .order_by(UserConsumption.consumed_at.desc())
+        .all()
+    )
+    return [str(row[0]) for row in result]
