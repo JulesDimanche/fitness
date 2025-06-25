@@ -444,15 +444,37 @@ const viewDate = selectedSliderDate;
                 }
             })
             .then(res => res.json().then(data => ({ ok: res.ok, data })))
-            .then(({ ok, data }) => {
-                if (ok) {
-                    alert("✅ Food log deleted successfully");
-const viewDate = selectedSliderDate;
-                    loadAndRenderLogs(viewDate);
-                } else {
-                    alert("❌ Deletion failed: " + (data.detail || "Unknown error"));
-                }
-            })
+            .then(async ({ ok, data }) => {
+    if (ok) {
+        alert("✅ Food log deleted successfully");
+
+        const viewDate = selectedSliderDate;
+        await loadAndRenderLogs(viewDate);
+
+        const dateBtn = document.querySelector(`.date-button[data-date="${viewDate}"]`);
+
+        // ✅ Optimistically remove class immediately
+        if (dateBtn) {
+            dateBtn.classList.remove("has-log");
+        }
+
+        // 🔁 Confirm with server if any logs still exist
+        const res = await fetch(`http://localhost:8000/food-log?log_date=${viewDate}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const logs = await res.json();
+            if (logs.length > 0 && dateBtn) {
+                // ✅ Still logs left → re-add glow
+                dateBtn.classList.add("has-log");
+            }
+        }
+    } else {
+        alert("❌ Deletion failed: " + (data.detail || "Unknown error"));
+    }
+})
+
             .catch(err => {
                 alert("❌ Network error while deleting");
             });
