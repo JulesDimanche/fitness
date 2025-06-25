@@ -120,7 +120,8 @@ def analyze_user(data: UserData):
         bmr = 10 * data.weight + 6.25 * data.height - 5 * data.age + 5
     else:
         bmr = 10 * data.weight + 6.25 * data.height - 5 * data.age - 161
-
+    protein_per_kg = 2.0  # g/kg
+    fat_ratio = 0.25      # 25% of total calories
     activity_map = {"low": 1.2, "medium": 1.55, "high": 1.9}
     tdee = round(bmr * activity_map.get(data.activity, 1.2))
 
@@ -136,10 +137,14 @@ def analyze_user(data: UserData):
         temp_bmr = 10 * projected_weight + 6.25 * data.height - 5 * data.age + (5 if data.gender == "male" else -161)
         temp_tdee = round(temp_bmr * activity_map.get(data.activity, 1.2))
         temp_required = round(temp_tdee + calorie_change_per_week / 7)
+        protein_grams = round(protein_per_kg * projected_weight)
+        fat_grams = round((fat_ratio * temp_required) / 9)
         weekly_progress.append({
             "week": week,
             "weight": projected_weight,
-            "required_calories": temp_required
+            "required_calories": temp_required,
+            "target_protein": protein_grams,
+            "target_fat": fat_grams
         })
 
     if weight_diff > 0:
@@ -191,7 +196,9 @@ def save_analysis(
             week=entry["week"],
             weight=entry["weight"],
             date=datetime.now() + timedelta(weeks=entry["week"]),
-            calories=entry.get("required_calories", 0)
+            calories=entry.get("required_calories", 0),
+            protein=entry.get("target_protein", 0),
+            fat=entry.get("target_fat", 0)
         )
         db.add(progress)
 
@@ -256,8 +263,24 @@ def submit_progress(
     expected_weight = round(start_weight + kg_per_week * week, 1)
 
     weight_diff = actual_weight - expected_weight
-    calorie_adjustment = round((-weight_diff * 7700) / 7)  # per day
-    suggestion = "Maintain" if abs(calorie_adjustment) < 50 else ("Increase" if calorie_adjustment < 0 else "Decrease")
+    raw_adjustment = (-weight_diff * 7700) / 7
+
+# Dampening factor: scale it down to prevent overadjustment
+    if abs(weight_diff) < 0.1:
+        dampening_factor = 0.0
+    elif abs(weight_diff) < 0.25:
+        dampening_factor = 0.25
+    else:
+        dampening_factor = 0.35
+
+    calorie_adjustment = round(raw_adjustment * dampening_factor)
+
+    if abs(calorie_adjustment) < 50:
+        suggestion = "Maintain"
+    elif calorie_adjustment > 0:
+        suggestion = f"Increase calories by {calorie_adjustment} kcal/day"
+    else:
+        suggestion = f"Decrease calories by {abs(calorie_adjustment)} kcal/day"
 
     # Update or create current week with actual weight (but do not store calories here)
     progress_entry = db.query(models.Progress).filter(
@@ -281,23 +304,41 @@ def submit_progress(
         db.add(progress_entry)
 
     # Apply calorie adjustment to all future weeks
+    protein_per_kg = 2.0
+    fat_ratio = 0.25
+
     for w in range(week + 1, latest_goal.duration_weeks + 1):
         future_entry = db.query(models.Progress).filter(
             models.Progress.user_id == current_user.id,
             models.Progress.week == w
         ).first()
 
+        # Estimate updated calories
+        updated_calories = calorie_adjustment
+        if future_entry and future_entry.calories:
+            updated_calories += future_entry.calories
+
+        # Estimate weight for protein calc
+        estimated_weight = round(start_weight + kg_per_week * w, 1)
+        updated_protein = round(protein_per_kg * estimated_weight)
+        updated_fat = round((fat_ratio * updated_calories) / 9)
+
         if future_entry:
-            future_entry.calories = (future_entry.calories or 0) + calorie_adjustment
+            future_entry.calories = updated_calories
+            future_entry.protein = updated_protein
+            future_entry.fat = updated_fat
         else:
             db.add(models.Progress(
                 user_id=current_user.id,
                 week=w,
                 weight=None,
                 actual_weight=None,
-                calories=calorie_adjustment,
+                calories=updated_calories,
+                protein=updated_protein,
+                fat=updated_fat,
                 date=None
             ))
+
 
     db.commit()
 

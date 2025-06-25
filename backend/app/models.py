@@ -43,14 +43,6 @@ class Goal(Base):
     user = relationship("User", back_populates="goals")
 
 
-class Exercise(Base):
-    __tablename__ = 'exercises'
-
-    id = Column(Integer, primary_key=True, index=True)
-    exercise_name = Column(String, nullable=False)
-    muscle_group = Column(String, nullable=False)
-    equipment = Column(String, nullable=True)
-    
 class Progress(Base):
     __tablename__ = "progress"
     id = Column(Integer, primary_key=True, index=True)
@@ -60,8 +52,19 @@ class Progress(Base):
     actual_weight = Column(Float,nullable=True)
     date = Column(Date)
     calories = Column(Integer)
+    protein = Column(Float, nullable=True)
+    fat = Column(Float, nullable=True)
+
 
     user = relationship("User", back_populates="progress")
+
+class Exercise(Base):
+    __tablename__ = 'exercises'
+
+    id = Column(Integer, primary_key=True, index=True)
+    exercise_name = Column(String, nullable=False)
+    muscle_group = Column(String, nullable=False)
+    equipment = Column(String, nullable=True)
 
 class WorkoutSession(Base):
     __tablename__ = "workout_sessions"

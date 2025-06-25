@@ -14,6 +14,8 @@ class UserLogin(BaseModel):
 class ProgressCreate(BaseModel):
     week: int
     weight: float
+    protein: float | None = None 
+    fat: float | None = None 
     
 class WorkoutSetCreate(BaseModel):
     set_number: int
