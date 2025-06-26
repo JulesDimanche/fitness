@@ -2,7 +2,12 @@ const token = localStorage.getItem("token");
 const progressForm = document.getElementById("progressForm");
 const feedbackContainer = document.getElementById("feedbackContainer");
 
-
+document.getElementById("logout-btn").addEventListener("click", () => {
+  if (confirm("Logout from your session?")) {
+    localStorage.removeItem("token");
+    window.location.href = "/login.html";
+  }
+});
 if (progressForm) {
   progressForm.addEventListener("submit", async (e) => {
     e.preventDefault();
