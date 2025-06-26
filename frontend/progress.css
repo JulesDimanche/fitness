@@ -29,6 +29,25 @@ form#progressForm {
   border-radius: 20px;
   box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
 }
+.plan-section {
+  margin: 2rem 0;
+  padding: 1rem;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+}
+
+#plan-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#plan-table th, #plan-table td {
+  border: 1px solid #333;
+  padding: 0.5rem;
+  text-align: center;
+}
 
 label {
   display: block;

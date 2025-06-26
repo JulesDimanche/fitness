@@ -350,6 +350,23 @@ def submit_progress(
         "suggestion": f"{suggestion} calories by {abs(calorie_adjustment)} kcal/day (applied from week {week + 1})"
     }
 
+@app.get("/weekly-plan")
+def get_weekly_plan(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    plan = db.query(models.Progress).filter(
+        models.Progress.user_id == current_user.id
+    ).order_by(models.Progress.week).all()
+
+    return [
+        {
+            "week": p.week,
+            "target_weight": p.weight,
+            "calories": p.calories,
+            "protein": p.protein,
+            "fat": p.fat
+        }
+        for p in plan
+    ]
+
 @app.post("/workout_sessions")
 async def create_workout_session(
     session_data: schemas.WorkoutSessionCreate,

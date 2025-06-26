@@ -30,11 +30,21 @@ if (progressForm) {
 
       const result = await response.json();
       if (response.ok) {
-        document.getElementById("feedback").innerText =
-          `Week ${result.week} - Expected: ${result.expected_weight}kg, ` +
-          `You entered: ${result.actual_weight}kg\n` +
-          `=> Suggestion: ${result.suggestion}`;
-      } else {
+  // Show feedback first
+  const feedbackText =
+    `Week ${result.week} - Expected: ${result.expected_weight}kg, ` +
+    `You entered: ${result.actual_weight}kg\n` +
+    `=> Suggestion: ${result.suggestion}`;
+
+  document.getElementById("feedback").innerText = feedbackText;
+
+  // 🔄 Then refresh the weekly plan table
+  await loadWeeklyPlan();
+
+  // ✅ Optionally re-set feedback to make sure it's not overridden
+  document.getElementById("feedback").innerText = feedbackText;
+}
+ else {
         alert("Error: " + (result.detail || "Something went wrong"));
       }
     } catch (err) {
@@ -43,3 +53,34 @@ if (progressForm) {
     }
   });
 }
+async function loadWeeklyPlan() {
+  const res = await fetch("http://localhost:8000/weekly-plan", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (res.ok) {
+    const plan = await res.json();
+    const tbody = document.getElementById("plan-table-body");
+    tbody.innerHTML = "";
+
+    plan.forEach(p => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>Week ${p.week}</td>
+        <td>${p.target_weight.toFixed(1)} kg</td>
+        <td>${p.calories} kcal</td>
+        <td>${p.protein} g</td>
+        <td>${p.fat} g</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } else {
+    console.error("Failed to load weekly plan");
+  }
+}
+window.addEventListener("load", async() => {
+  await loadWeeklyPlan();
+});
+
