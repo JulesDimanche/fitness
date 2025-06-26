@@ -6,7 +6,17 @@
   <link rel="stylesheet" href="bmi.css">
 </head>
 <body>
-  <button id="logoutBtn" class="logout-button">Logout</button>
+  <nav class="navbar">
+  <div class="nav-logo">🏋️ MyGymTracker</div>
+  <ul class="nav-links">
+    <li><a href="/profile.html">Profile</a></li>
+    <li><a href="/bmi.html" class="active">BMI</a></li>
+    <li><a href="/progress.html">Progress</a></li>
+    <li><a href="/calorie_tracker.html">Nutrition</a></li>
+    <li><a href="/workout.html">Workout</a></li>
+    <li><a href="#" id="logout-btn">Logout</a></li>
+  </ul>
+</nav>
   <h1>BMI Analyzer</h1>
   <form id="bmiForm">
     <input type="number" name="weight" placeholder="Weight (kg)" required><br>
@@ -35,10 +45,6 @@
     <button id="confirmSaveBtn" style="display: none;">Confirm & Save</button>
 
   </form>
-  <a href="progress.html">PROGRESS</a>
-  <a href="workout.html">WORKOUT PROGRESS</a>
-  <a href="calorie_tracker.html">CALORIES TRACKER</a>
-  <div id="result"></div>
   <script src="bmi.js"></script>
 
 
