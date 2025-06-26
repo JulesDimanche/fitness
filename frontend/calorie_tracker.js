@@ -270,6 +270,26 @@ function renderFoodLogs(logs) {
     const totalCalories = logs.reduce((sum, log) => sum + log.calories, 0);
     const totalProtein = logs.reduce((sum, log) => sum + log.protein, 0);
     const totalFat = logs.reduce((sum, log) => sum + log.fat, 0);
+    document.getElementById("target-macros").innerHTML = `
+  <div class="target-box">
+    Target Calories
+    <span>${currentTarget.calories} kcal</span>
+  </div>
+  <div class="target-box">
+    Target Protein
+    <span>${currentTarget.protein} g</span>
+  </div>
+  <div class="target-box">
+    Target Fat
+    <span>${currentTarget.fat} g</span>
+  </div>
+`;
+
+renderMacroCircles(
+  { calories: totalCalories, protein: totalProtein, fat: totalFat },
+  currentTarget
+);
+
 
     let html = `
     <div class="nutrition-totals">
@@ -481,6 +501,58 @@ const viewDate = selectedSliderDate;
         });
     });
 }
+function renderMacroCircles(total, target) {
+  const circleHTML = (label, totalVal, targetVal, color) => {
+    const percent = Math.min(100, (totalVal / targetVal) * 100).toFixed(1);
+    const radius = 50;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percent / 100) * circumference;
+
+    return `
+      <div class="macro-circle">
+        <svg width="120" height="120">
+          <circle cx="60" cy="60" r="${radius}" stroke="#333" stroke-width="12" fill="none"/>
+          <circle cx="60" cy="60" r="${radius}" stroke="${color}" stroke-width="12" fill="none"
+            stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" 
+            stroke-linecap="round" transform="rotate(-90 60 60)" />
+          <text x="60" y="60" text-anchor="middle" dy="0.3em" fill="#fff" font-size="18">
+            ${percent}%
+          </text>
+        </svg>
+        <div class="macro-label">${label}<br><span>${totalVal}/${targetVal}</span></div>
+      </div>
+    `;
+  };
+
+  document.getElementById("macro-circles").innerHTML = `
+    ${circleHTML("Calories", total.calories, target.calories, "#0ff")}
+    ${circleHTML("Protein", total.protein, target.protein, "#9f0")}
+    ${circleHTML("Fat", total.fat, target.fat, "#f09")}
+  `;
+}
+
+let currentTarget = { calories: 0, protein: 0, fat: 0 };
+
+async function fetchTodayTarget() {
+  try {
+    const res = await fetch("http://localhost:8000/today-target", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      currentTarget = {
+        calories: data.calories || 0,
+        protein: data.protein || 0,
+        fat: data.fat || 0
+      };
+    } else if (res.status === 404) {
+      currentTarget = { calories: 0, protein: 0, fat: 0 };
+    }
+  } catch (err) {
+    console.error("Failed to fetch today's target:", err);
+  }
+}
 
 async function loadAndRenderLogs(date) {
     foodLogsDisplay.innerHTML = "⏳ Loading...";
@@ -499,6 +571,7 @@ async function loadAndRenderLogs(date) {
         }
 
         const logs = await response.json();
+        await fetchTodayTarget();
         renderFoodLogs(logs);
     } catch (err) {
         foodLogsDisplay.innerHTML = `❌ Error: ${err.message}`;

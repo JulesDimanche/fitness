@@ -968,7 +968,7 @@ current_user: User = Depends(get_current_user)):
 
     if update.food_name is not None:
         food_log.food_name = update.food_name
-    if update.quantity is not None:
+    if update.quantity is not None and update.grams is None:
         food_log.quantity = update.quantity
 
         food_item = food_db.query(FoodItem).filter(FoodItem.food_item == food_log.food_name).first()
@@ -981,7 +981,7 @@ current_user: User = Depends(get_current_user)):
         food_log.protein = round(update.quantity * food_item.protein, 2)
         food_log.fat = round(update.quantity * food_item.fat, 2)
         food_log.carbs = round(update.quantity * food_item.carbs, 2)
-    if update.grams is not None:
+    if update.grams is not None and update.quantity is None:
         food_log.grams = update.grams
         food_item = food_db.query(FoodItem).filter(FoodItem.food_item == food_log.food_name).first()
         if not food_item:
@@ -1031,3 +1031,23 @@ def get_logged_dates(user: User = Depends(get_current_user), db: Session = Depen
         .all()
     )
     return [str(row[0]) for row in result]
+@app.get("/today-target")
+def get_today_target(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    today = datetime.today().date()
+    progress = (
+        db.query(models.Progress)
+        .filter(models.Progress.user_id == current_user.id)
+        .filter(models.Progress.date <= today)
+        .order_by(models.Progress.date.desc())
+        .first()
+    )
+
+    if not progress:
+        raise HTTPException(status_code=404, detail="No progress data found for today")
+
+    return {
+        "week": progress.week,
+        "calories": progress.calories,
+        "protein": progress.protein,
+        "fat": progress.fat
+    }
