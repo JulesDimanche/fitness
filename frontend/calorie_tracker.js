@@ -253,6 +253,22 @@ async function loadFoodLog(date) {
 function renderFoodLogs(logs) {
     if (logs.length === 0) {
         foodLogsDisplay.innerHTML = "No food entries found for this date.";
+        // 🧼 Clear totals and macro circles when there's no log
+    document.getElementById("macro-circles").innerHTML = "";
+    document.getElementById("target-macros").innerHTML = `
+      <div class="target-box">
+        Target Calories
+        <span>${currentTarget.calories} kcal</span>
+      </div>
+      <div class="target-box">
+        Target Protein
+        <span>${currentTarget.protein} g</span>
+      </div>
+      <div class="target-box">
+        Target Fat
+        <span>${currentTarget.fat} g</span>
+      </div>
+    `;
         return;
     }
 
@@ -328,7 +344,7 @@ renderMacroCircles(
                                 <td>${log.protein.toFixed(1)}g</td>
                                 <td>${log.carbs.toFixed(1)}g</td>
                                 <td>${log.fat.toFixed(1)}g</td>
-                                <td><button class="edit-btn">Edit</button></td>
+                                <td><button onclick="editFoodLog(${log.id})">Edit</button>
                                 <td><button class="delete-btn">Delete</button></td>
                             </tr>
                         `).join("")}
@@ -365,7 +381,7 @@ renderMacroCircles(
                             <td>${log.protein.toFixed(1)}g</td>
                             <td>${log.carbs.toFixed(1)}g</td>
                             <td>${log.fat.toFixed(1)}g</td>
-                            <td><button class="edit-btn">Edit</button></td>
+                            <td><button onclick="editFoodLog(${log.id})">Edit</button>
                             <td><button class="delete-btn">Delete</button></td>
                         </tr>
                     `).join("")}
@@ -446,7 +462,7 @@ const viewDate = selectedSliderDate;
     
     // Add delete functionality
     document.querySelectorAll(".delete-btn").forEach(button => {
-        button.addEventListener("click", function() {
+        button.addEventListener("click",async function() {
             const row = this.closest("tr");
             const logId = row.id.split('-')[2];
 
@@ -498,6 +514,8 @@ const viewDate = selectedSliderDate;
             .catch(err => {
                 alert("❌ Network error while deleting");
             });
+            await loadAndRenderLogs(selectedSliderDate);
+
         });
     });
 }
@@ -608,9 +626,10 @@ function editFoodLog(logId) {
     const grams = parseFloat(cells[2].textContent);
 
     // Replace with input fields
-    cells[0].innerHTML = `<input type="text" value="${food}" id="edit-food-${logId}">`;
-    cells[1].innerHTML = `<input type="number" value="${quantity}" step="0.1" id="edit-qty-${logId}">`;
-    cells[2].innerHTML = `<input type="number" value="${grams}" step="0.1" id="edit-grams-${logId}">`;
+cells[0].innerHTML = `<input type="text" value="${food}" id="edit-food-${logId}">`;
+cells[1].innerHTML = `<input type="number" value="${quantity}" step="0.1" id="edit-qty-${logId}" data-original="${quantity}">`;
+cells[2].innerHTML = `<input type="number" value="${grams}" step="0.1" id="edit-grams-${logId}" data-original="${grams}">`;
+
 
     // Keep other cells (calories, protein, carbs, fat) as-is for now
 
@@ -619,32 +638,62 @@ function editFoodLog(logId) {
 }
 
 async function saveFoodLog(logId) {
-    const food = document.getElementById(`edit-food-${logId}`).value;
-    const quantity = parseFloat(document.getElementById(`edit-qty-${logId}`).value);
-    const grams = parseFloat(document.getElementById(`edit-grams-${logId}`).value);
-
-    console.log("Saving log", logId, food, quantity, grams);
-
-    // TODO: send PATCH or PUT request to your server
-    // Example:
-    await fetch(`http://localhost:8000/update-food-log/${logId}`, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            food_name: food,
-            quantity: quantity,
-            grams: grams
-        })
-    });
-    
-
-    // Reload log after saving
-    const viewDate = document.getElementById("view_date").value;
-    await loadAndRenderLogs(viewDate);
+  const foodInput = document.getElementById(`edit-food-${logId}`);
+  const qtyInput = document.getElementById(`edit-qty-${logId}`);
+  const gramsInput = document.getElementById(`edit-grams-${logId}`);
+if (!gramsInput) {
+  console.error(`edit-grams-${logId} not found!`);
+  return;
 }
+if (!foodInput) {
+  console.error(`edit-food-${logId} not found!`);
+  return;
+}
+if (!qtyInput) {
+  console.error(`edit-qty-${logId} not found!`);
+  return;
+}
+  const food = foodInput.value;
+  const quantity = parseFloat(qtyInput.value);
+  const grams = parseFloat(gramsInput.value);
+
+  const originalQty = parseFloat(qtyInput.getAttribute("data-original"));
+  const originalGms = parseFloat(gramsInput.getAttribute("data-original"));
+
+  const updatedData = { food_name: food };
+
+  const qtyChanged = !isNaN(quantity) && !isNaN(originalQty) && quantity !== originalQty;
+  const gmsChanged = !isNaN(grams) && !isNaN(originalGms) && grams !== originalGms;
+  console.log("originalGms:", originalGms, "current grams:", grams, "gmsChanged =", gmsChanged);
+
+
+  // ✅ Only include the one the user changed
+  if (gmsChanged && !qtyChanged) {
+    updatedData.grams = grams;
+  } else if (qtyChanged && !gmsChanged) {
+    updatedData.quantity = quantity;
+  } else if (gmsChanged && qtyChanged) {
+    // You can choose what to prioritize (here we trust grams)
+    updatedData.grams = grams;
+  }
+
+  console.log("Qty Changed:", qtyChanged, "Grams Changed:", gmsChanged);
+  console.log("Updated Data Sent →", updatedData);
+console.log("Sending updatedData:", updatedData);
+
+  await fetch(`http://localhost:8000/update-food-log/${logId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(updatedData)
+  });
+
+await loadAndRenderLogs(selectedSliderDate);
+}
+
+
 
 
 

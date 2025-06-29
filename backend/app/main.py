@@ -959,49 +959,85 @@ def get_food_log(
     ]
     
 @app.put("/update-food-log/{log_id}")
-def update_food_log(log_id: int, update: FoodLogUpdate, db: Session = Depends(get_db),food_db: Session = Depends(get_food_db),
-current_user: User = Depends(get_current_user)):
-    food_log = db.query(UserConsumption).filter(UserConsumption.id == log_id, UserConsumption.user_id == current_user.id).first()
+def update_food_log(
+    log_id: int,
+    update: FoodLogUpdate,
+    db: Session = Depends(get_db),
+    food_db: Session = Depends(get_food_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Fetch the existing log
+    food_log = db.query(UserConsumption).filter(
+        UserConsumption.id == log_id,
+        UserConsumption.user_id == current_user.id
+    ).first()
 
     if not food_log:
         raise HTTPException(status_code=404, detail="Food log not found.")
 
-    if update.food_name is not None:
+    # Track if we need to recalculate nutrition
+    recalculate_nutrition = False
+
+    # Update food name if changed
+    if update.food_name is not None and update.food_name != food_log.food_name:
         food_log.food_name = update.food_name
-    if update.quantity is not None and update.grams is None:
+        recalculate_nutrition = True
+
+    # Handle quantity/grams updates
+    if update.quantity is not None:
+        if update.quantity <= 0:
+            raise HTTPException(status_code=400, detail="Quantity must be positive")
         food_log.quantity = update.quantity
+        recalculate_nutrition = True
 
-        food_item = food_db.query(FoodItem).filter(FoodItem.food_item == food_log.food_name).first()
-        if not food_item:
-            raise HTTPException(status_code=404, detail="Food item not found in food database.")
-
-        # Recalculate nutrients
-        food_log.grams = round(update.quantity * food_item.serving_grams, 2)
-        food_log.calories = round(update.quantity * food_item.calories, 2)
-        food_log.protein = round(update.quantity * food_item.protein, 2)
-        food_log.fat = round(update.quantity * food_item.fat, 2)
-        food_log.carbs = round(update.quantity * food_item.carbs, 2)
-    if update.grams is not None and update.quantity is None:
+    if update.grams is not None:
+        if update.grams <= 0:
+            raise HTTPException(status_code=400, detail="Grams must be positive")
         food_log.grams = update.grams
-        food_item = food_db.query(FoodItem).filter(FoodItem.food_item == food_log.food_name).first()
+        recalculate_nutrition = True
+
+    # If we updated food name or quantity/grams, we need to:
+    # 1. Get the new food item data
+    # 2. Recalculate nutrition values
+    if recalculate_nutrition:
+        food_item = food_db.query(FoodItem).filter(
+            FoodItem.food_item == food_log.food_name
+        ).first()
+
         if not food_item:
             raise HTTPException(status_code=404, detail="Food item not found in food database.")
-        food_log.quantity = round(update.grams / food_item.serving_grams, 2)
-        food_log.calories = round(update.grams / food_item.serving_grams * food_item.calories, 2)
-        food_log.protein = round(update.grams / food_item.serving_grams * food_item.protein, 2)
-        food_log.fat = round(update.grams / food_item.serving_grams * food_item.fat, 2)
-        food_log.carbs = round(update.grams / food_item.serving_grams * food_item.carbs, 2)
 
+        # Ensure quantity and grams are in sync
+        if update.quantity is not None and update.grams is None:
+            food_log.grams = round(update.quantity * food_item.serving_grams, 2)
+        elif update.grams is not None and update.quantity is None:
+            food_log.quantity = round(update.grams / food_item.serving_grams, 2)
+        elif update.quantity is not None and update.grams is not None:
+            # If both are provided, prioritize quantity and recalculate grams
+            food_log.grams = round(update.quantity * food_item.serving_grams, 2)
+
+        # Recalculate all nutrition values
+        food_log.calories = round(food_log.quantity * food_item.calories, 2)
+        food_log.protein = round(food_log.quantity * food_item.protein, 2)
+        food_log.fat = round(food_log.quantity * food_item.fat, 2)
+        food_log.carbs = round(food_log.quantity * food_item.carbs, 2)
 
     db.commit()
     db.refresh(food_log)
 
-    return {"message": "Food log updated successfully", "log": {
-        "id": food_log.id,
-        "food_name": food_log.food_name,
-        "quantity": food_log.quantity,
-        "grams": food_log.grams,
-    }}
+    return {
+        "message": "Food log updated successfully",
+        "log": {
+            "id": food_log.id,
+            "food_name": food_log.food_name,
+            "quantity": food_log.quantity,
+            "grams": food_log.grams,
+            "calories": food_log.calories,
+            "protein": food_log.protein,
+            "fat": food_log.fat,
+            "carbs": food_log.carbs
+        }
+    }
 
 @app.delete("/delete-food-log/{log_id}")
 def delete_food_log(

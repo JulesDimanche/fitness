@@ -92,9 +92,9 @@ class FoodSuggestion(BaseModel):
 
 
 class FoodLogUpdate(BaseModel):
-    food_name: Optional[str]
-    quantity: Optional[float]
-    grams: Optional[float]
+    food_name: Optional[str]=None
+    quantity: Optional[float]=None
+    grams: Optional[float]=None
 
 class ExerciseSuggestion(BaseModel):
     id: int
