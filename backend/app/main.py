@@ -1087,3 +1087,47 @@ def get_today_target(db: Session = Depends(get_db), current_user: User = Depends
         "protein": progress.protein,
         "fat": progress.fat
     }
+@app.get("/target-for-date")
+def get_target_for_date(
+    date: str,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    try:
+        selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+
+    # Get all progress entries sorted by date
+    all_progress = (
+        db.query(Progress)
+        .filter(Progress.user_id == user.id)
+        .order_by(Progress.date.asc())
+        .all()
+    )
+
+    if not all_progress:
+        raise HTTPException(status_code=404, detail="No progress data found")
+
+    # Case 1: Selected date is before the first week
+    if selected_date < all_progress[0].date:
+        progress = all_progress[0]
+
+    else:
+        # Find the most recent progress before or on the selected date
+        progress = None
+        for p in all_progress:
+            if p.date <= selected_date:
+                progress = p
+            else:
+                break
+
+        # Fallback: If none matched somehow (shouldn't happen), default to first
+        if not progress:
+            progress = all_progress[0]
+
+    return {
+        "calories": progress.calories,
+        "protein": progress.protein,
+        "fat": progress.fat
+    }

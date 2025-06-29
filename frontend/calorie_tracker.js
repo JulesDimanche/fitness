@@ -551,9 +551,9 @@ function renderMacroCircles(total, target) {
 
 let currentTarget = { calories: 0, protein: 0, fat: 0 };
 
-async function fetchTodayTarget() {
+async function fetchTargetForDate(date) {
   try {
-    const res = await fetch("http://localhost:8000/today-target", {
+    const res = await fetch(`http://localhost:8000/target-for-date?date=${date}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -564,13 +564,14 @@ async function fetchTodayTarget() {
         protein: data.protein || 0,
         fat: data.fat || 0
       };
-    } else if (res.status === 404) {
+    } else {
       currentTarget = { calories: 0, protein: 0, fat: 0 };
     }
   } catch (err) {
-    console.error("Failed to fetch today's target:", err);
+    console.error("Error fetching target for date:", err);
   }
 }
+
 
 async function loadAndRenderLogs(date) {
     foodLogsDisplay.innerHTML = "⏳ Loading...";
@@ -589,7 +590,7 @@ async function loadAndRenderLogs(date) {
         }
 
         const logs = await response.json();
-        await fetchTodayTarget();
+        await fetchTargetForDate(selectedSliderDate);
         renderFoodLogs(logs);
     } catch (err) {
         foodLogsDisplay.innerHTML = `❌ Error: ${err.message}`;
