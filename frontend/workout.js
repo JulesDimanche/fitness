@@ -757,6 +757,8 @@ deleteExerciseBtn.addEventListener("click", async () => {
 
 // 🔁 Refresh the logged dates AFTER UI update
 await fetchWorkoutLoggedDates();
+await createWorkoutDateButtons();
+
 
 // ✅ Then manually update the .has-log class
 const btn = document.querySelector(`.date-button[data-date="${date}"]`);
@@ -862,7 +864,10 @@ deleteBtn.addEventListener("click", async () => {
 
     if (res.ok) {
         alert("Set deleted successfully");
-        loadWorkoutsByDate(date); // Refresh the displayed workout data
+        loadWorkoutsByDate(date); 
+        await fetchWorkoutLoggedDates();
+await createWorkoutDateButtons();
+// Refresh the displayed workout data
     } else {
         const err = await res.json();
         alert("Error deleting set: " + err.detail);

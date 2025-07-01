@@ -650,7 +650,16 @@ async def delete_workout_set(
     if remaining_sets == 0:
         db.delete(exercise)
         db.commit()
+
+    # ✅ Delete session if no exercises remain
+        remaining_exercises = db.query(WorkoutExercise).filter_by(session_id=session.id).count()
+        if remaining_exercises == 0:
+            db.delete(session)
+            db.commit()
+            return {"message": "Set deleted and session removed (no sets left)"}
+
         return {"message": "Set deleted and exercise removed (no sets left)"}
+
 
     return {"message": "Workout set deleted successfully"}
 
@@ -686,7 +695,16 @@ async def delete_exercise(
 
     db.delete(exercise)
     db.commit()
+
+    # ✅ Delete session if no exercises remain
+    remaining_exercises = db.query(WorkoutExercise).filter_by(session_id=session.id).count()
+    if remaining_exercises == 0:
+        db.delete(session)
+        db.commit()
+        return {"message": "Exercise and session deleted (no exercises left)"}
+
     return {"message": "Exercise deleted successfully"}
+
 
 @app.post("/save_template")
 async def save_template(
