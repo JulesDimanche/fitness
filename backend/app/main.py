@@ -561,6 +561,7 @@ async def get_workouts_by_date(
         for exercise in session.exercises:
             sets = [
                 {
+                    "id": s.id,
                     "set_number": s.set_number,
                     "reps": s.reps,
                     "weight": s.weight
@@ -625,47 +626,31 @@ async def update_workout_set(
 
 @app.delete("/delete_workout_set")
 async def delete_workout_set(
-    exercise_name: str,
-    set_number: int,
-    date: str,
+    set_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(get_current_user)
 ):
-    try:
-        session_date = datetime.strptime(date, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format.")
+    workout_set = db.query(WorkoutSet).filter_by(id=set_id).first()
 
-    # Find the correct session
-    session = (
-        db.query(WorkoutSession)
-        .filter_by(user_id=current_user.id)
-        .filter(func.date(WorkoutSession.date) == session_date)
-        .first()
-    )
-    if not session:
-        raise HTTPException(status_code=404, detail="Workout session not found.")
-
-    # Find the exercise
-    exercise = (
-        db.query(WorkoutExercise)
-        .filter_by(session_id=session.id, exercise_name=exercise_name)
-        .first()
-    )
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found.")
-
-    # Find the set to delete
-    workout_set = (
-        db.query(WorkoutSet)
-        .filter_by(exercise_id=exercise.id, set_number=set_number)
-        .first()
-    )
     if not workout_set:
         raise HTTPException(status_code=404, detail="Set not found.")
 
+    # Ensure it's this user's set
+    exercise = db.query(WorkoutExercise).filter_by(id=workout_set.exercise_id).first()
+    session = db.query(WorkoutSession).filter_by(id=exercise.session_id).first()
+
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized.")
+
     db.delete(workout_set)
     db.commit()
+
+    # Cleanup: delete exercise if no sets remain
+    remaining_sets = db.query(WorkoutSet).filter_by(exercise_id=exercise.id).count()
+    if remaining_sets == 0:
+        db.delete(exercise)
+        db.commit()
+        return {"message": "Set deleted and exercise removed (no sets left)"}
 
     return {"message": "Workout set deleted successfully"}
 
@@ -842,6 +827,15 @@ def search_exercises(
         print("No exercises found for query:", query)
     
     return exercises
+@app.get("/workout_logged_dates")
+def get_logged_workout_dates(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    dates = (
+        db.query(WorkoutSession.date)
+        .filter(WorkoutSession.user_id == user.id)
+        .distinct()
+        .all()
+    )
+    return [str(d[0]) for d in dates]
 
 #food
 from app.schemas import LogFoodRequest

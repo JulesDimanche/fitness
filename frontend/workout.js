@@ -21,7 +21,7 @@ function initWorkoutTracker() {
         redirectToLogin();
         return;
     }
-    document.getElementById("workout-date").addEventListener("change", () => {
+    /*document.getElementById("workout-date").addEventListener("change", () => {
     // Reset routine state
     currentTemplateId = null;
     document.getElementById("routine-name").value = "";
@@ -31,7 +31,7 @@ function initWorkoutTracker() {
     // Clear and start fresh
     document.getElementById("exercises-container").innerHTML = "";
     addExercise();
-});
+});*/
     // Set up routine mode toggle
     document.querySelectorAll("input[name='routine-mode']").forEach(radio => {
         radio.addEventListener("change", (e) => {
@@ -693,26 +693,12 @@ function clearComparison(element) {
     element.className = 'comparison';
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const dateInput = document.getElementById("workout-date");
-
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Set date input default value to today
-  dateInput.value = today;
-
-  // Load workouts for today on page load
-  loadWorkoutsByDate(today);
-
-  // Listen for changes and load accordingly
-  dateInput.addEventListener("change", (e) => {
-    const selectedDate = e.target.value;
-    if (selectedDate) {
-      loadWorkoutsByDate(selectedDate);
-    }
-  });
+document.addEventListener("DOMContentLoaded", async () => {
+  selectedWorkoutDate = new Date().toISOString().split("T")[0];
+  await createWorkoutDateButtons();
+  await loadWorkoutsByDate(selectedWorkoutDate);
 });
+
 
 
 
@@ -756,9 +742,34 @@ deleteExerciseBtn.addEventListener("click", async () => {
     });
 
     if (res.ok) {
-        alert("Exercise deleted successfully.");
-        loadWorkoutsByDate(date);  // Refresh UI
-    } else {
+  alert("Exercise deleted successfully.");
+
+  // 1. Check if this was the last exercise
+  const check = await fetch(`http://localhost:8000/workouts_by_date?date=${date}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await check.json();
+  const hasExercises = data.exercises && data.exercises.length > 0;
+
+  // 🧼 Step 2: If no exercises remain, remove glow manually
+  await loadWorkoutsByDate(date);
+
+// 🔁 Refresh the logged dates AFTER UI update
+await fetchWorkoutLoggedDates();
+
+// ✅ Then manually update the .has-log class
+const btn = document.querySelector(`.date-button[data-date="${date}"]`);
+if (btn) {
+  if (workoutLoggedDates.has(date)) {
+    btn.classList.add("has-log");
+  } else {
+    btn.classList.remove("has-log");
+  }
+}
+ // ✅ Refresh glow
+}
+ else {
         const err = await res.json();
         alert("Failed to delete: " + err.detail);
     }
@@ -839,9 +850,8 @@ deleteBtn.addEventListener("click", async () => {
     if (!confirm("Are you sure you want to delete this set?")) return;
 
     const url = new URL("http://localhost:8000/delete_workout_set");
-    url.searchParams.append("exercise_name", exercise.exercise_name);
-    url.searchParams.append("set_number", index + 1);
-    url.searchParams.append("date", date);
+    url.searchParams.append("set_id", set.id); // ✅ Send set ID
+
 
     const res = await fetch(url, {
         method: "DELETE",
@@ -888,7 +898,7 @@ async function handleFormSubmit(event) {
         return;
     }
 
-    const date = document.getElementById("workout-date").value;
+const date = selectedWorkoutDate;
     const payload = { date, exercises };
 
     const res = await fetch("http://localhost:8000/workout_sessions", {
@@ -902,8 +912,9 @@ async function handleFormSubmit(event) {
 
     if (res.ok) {
         alert("Workout logged!");
-        loadWorkoutsByDate(date);
-        document.getElementById("workout-date").value = date;
+await loadWorkoutsByDate(date);
+await createWorkoutDateButtons();  // ✅ Update glow after logging
+        //document.getElementById("workout-date").value = date;
 
     } else {
         alert("Error logging workout");
@@ -995,4 +1006,76 @@ function debounce(func, timeout = 300) {
         clearTimeout(timer);
         timer = setTimeout(() => { func.apply(this, args); }, timeout);
     };
+}
+let workoutLoggedDates = new Set();
+let selectedWorkoutDate = new Date().toISOString().split("T")[0]; // Default today
+
+function formatDate(date) {
+  return date.toISOString().split("T")[0];
+}
+
+async function fetchWorkoutLoggedDates() {
+  try {
+    const res = await fetch("http://localhost:8000/workout_logged_dates", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const dates = await res.json();
+      const normalized = dates.map(d => d.split(" ")[0]);
+      workoutLoggedDates = new Set(normalized);
+    }
+  } catch (err) {
+    console.error("Failed to fetch workout logged dates:", err);
+  }
+}
+
+async function createWorkoutDateButtons() {
+  const today = new Date();
+  const dateSlider = document.getElementById("date-slider");
+  const pastDays = 90;
+  const futureDays = 7;
+  dateSlider.innerHTML = "";
+
+  await fetchWorkoutLoggedDates();
+
+  let todayButton = null;
+
+  for (let i = -pastDays; i <= futureDays; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const dateStr = formatDate(date);
+
+    const btn = document.createElement("div");
+    btn.className = "date-button";
+    btn.dataset.date = dateStr;
+    btn.innerHTML = `
+      <div>${date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+      <div>${date.getDate()}</div>
+    `;
+    if (workoutLoggedDates.has(dateStr)) {
+      btn.classList.add("has-log");
+    }
+
+    if (dateStr === selectedWorkoutDate) {
+  btn.classList.add("active");
+}
+
+
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".date-button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedWorkoutDate = dateStr;
+      loadWorkoutsByDate(dateStr);
+    });
+
+    dateSlider.appendChild(btn);
+  }
+
+  const activeButton = document.querySelector(`.date-button[data-date="${selectedWorkoutDate}"]`);
+if (activeButton) {
+  setTimeout(() => {
+    activeButton.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, 0);
+}
+
 }

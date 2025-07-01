@@ -65,6 +65,57 @@ form {
   bottom: -4px;
   left: 0;
 }
+.date-slider-container {
+  width: 100%;
+  max-width: 1400px;
+  overflow-x: auto;
+  padding: 10px 0;
+  margin: 20px 0;
+}
+
+.date-slider {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 15px;
+  scrollbar-width: none;
+}
+
+.date-slider::-webkit-scrollbar {
+  display: none;
+}
+
+.date-button {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background-color: #222;
+  color: #ccc;
+  border: 1px solid #444;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  min-width: 80px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.date-button:hover {
+  background-color: #333;
+}
+
+.date-button.active {
+  background: linear-gradient(90deg, #4f5eff, #7c1fff);
+  color: white;
+  font-weight: bold;
+  border: none;
+}
+
+.date-button.has-log {
+  transition: all 0.3s ease;
+  border: 2px solid #0ff;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+}
+
 
 .date-picker-group {
     margin-bottom: 2rem;
