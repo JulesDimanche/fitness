@@ -2,7 +2,7 @@
 const showNotification = (message, isSuccess) => {
   const notification = document.createElement('div');
   notification.className = `rpg-notification ${isSuccess ? 'success' : 'error'}`;
-  
+
   notification.innerHTML = `
     <div class="notification-content">
       <span class="notification-icon">${isSuccess ? '✓' : '✗'}</span>
@@ -10,10 +10,9 @@ const showNotification = (message, isSuccess) => {
       ${isSuccess ? '<div class="progress-bar"><div class="progress-fill"></div></div>' : ''}
     </div>
   `;
-  
+
   document.body.appendChild(notification);
-  
-  // Auto-remove notification
+
   setTimeout(() => {
     notification.classList.add('fade-out');
     setTimeout(() => notification.remove(), 500);
@@ -25,7 +24,6 @@ const animateStats = (stats) => {
   const statElements = {
     strength: document.querySelector('[data-stat="strength"]'),
     endurance: document.querySelector('[data-stat="endurance"]'),
-    // Add other stats here
   };
 
   Object.entries(stats).forEach(([stat, value]) => {
@@ -46,8 +44,7 @@ const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
-    // Show loading state
+
     const submitBtn = loginForm.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerHTML;
     submitBtn.innerHTML = 'AUTHENTICATING...';
@@ -65,29 +62,29 @@ if (loginForm) {
       const result = await response.json();
 
       if (result.access_token) {
+        // 🔑 Save token
         localStorage.setItem("token", result.access_token);
-        
-        // Show RPG-style success notification
+        // 🔑 Save username (new)
+        if (result.username) {
+          localStorage.setItem("username", result.username);
+          console.log("Username stored:", result.username);
+        }
+
         showNotification("ACCESS GRANTED! Loading stats...", true);
-        
-        // Display stats preview (replace with actual data from your API)
+
+        // Show stats preview if the element exists
         setTimeout(() => {
-          document.getElementById('statsPreview').classList.remove('hidden');
-          animateStats({
-            strength: 75,  // Example values - replace with real data
-            endurance: 60
-          });
-          
-          // Fetch and display daily quest
+          const statsPreview = document.getElementById('statsPreview');
+          if (statsPreview) statsPreview.classList.remove('hidden');
+
+          animateStats({ strength: 75, endurance: 60 }); // demo values
           fetchDailyQuest();
-          
         }, 1500);
-        
+
         // Redirect after delay
         setTimeout(() => {
           window.location.href = "profile.html";
         }, 5000);
-        
       } else {
         showNotification(`ACCESS DENIED: ${result.detail || "Invalid credentials"}`, false);
       }
@@ -101,17 +98,20 @@ if (loginForm) {
   });
 }
 
-// Daily Quest Loader (Example - implement your actual API endpoint)
+// Daily Quest Loader
 async function fetchDailyQuest() {
   try {
-    // Replace with your actual API call
     const response = await fetch('/api/daily-quest');
     const quest = await response.json();
-    
-    document.getElementById('questDescription').textContent = quest.description;
-    document.getElementById('questXp').textContent = quest.xp_reward;
-    document.getElementById('dailyQuest').classList.remove('hidden');
-    
+
+    const desc = document.getElementById('questDescription');
+    const xp   = document.getElementById('questXp');
+    const box  = document.getElementById('dailyQuest');
+
+    if (desc) desc.textContent = quest.description;
+    if (xp)   xp.textContent   = quest.xp_reward;
+    if (box)  box.classList.remove('hidden');
+
   } catch (err) {
     console.error("Quest loading error:", err);
   }

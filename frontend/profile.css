@@ -12,50 +12,48 @@ body {
   color: white;
   font-family: 'Oxanium', sans-serif;
 }
-.logout-button {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  padding: 10px 20px;
-  font-weight: bold;
-  background-color: #1e1e2f;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  z-index: 1000;
-  transition: background 0.3s ease;
-}
-
-.logout-button:hover {
-  background-color: #ff4d4d;
-  color: #fff;
-}
-
-.nav-buttons {
+.navbar {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 30px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  background: #0f0f1f;
+  padding: 1rem 2rem;
+  border-bottom: 2px solid #444;
+  color: white;
 }
 
-.nav-buttons button {
-  padding: 12px 24px;
-  font-size: 16px;
+.nav-logo {
+  font-size: 1.5rem;
   font-weight: bold;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #4f46e5, #9333ea);
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 0 10px #9333ea;
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  color: #0ff;
 }
 
-.nav-buttons button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px #c084fc;
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  position: relative;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #0ff;
+}
+
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: #0ff;
+  bottom: -4px;
+  left: 0;
 }
 
 

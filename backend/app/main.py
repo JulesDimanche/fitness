@@ -854,6 +854,43 @@ def get_logged_workout_dates(user: User = Depends(get_current_user), db: Session
         .all()
     )
     return [str(d[0]) for d in dates]
+@app.get("/recent_workouts")
+def recent_workouts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    sessions = (
+        db.query(WorkoutSession)
+        .filter(WorkoutSession.user_id == current_user.id)
+        .order_by(WorkoutSession.date.desc())
+        .limit(3)
+        .all()
+    )
+
+    result = []
+    for session in sessions:
+        if not session.exercises:
+            continue
+
+        exercise_names = [ex.exercise_name for ex in session.exercises]
+        summary_name = ", ".join(exercise_names[:2])  # Show 2 exercises max
+
+        emoji = "🏋️"  # Default
+        if any("Chest" in ex for ex in exercise_names):
+            emoji = "💪"
+        elif any("Cardio" in ex for ex in exercise_names):
+            emoji = "🏃"
+        elif any("Leg" in ex for ex in exercise_names):
+            emoji = "🦵"
+
+        result.append({
+            "date": session.date.strftime("%Y-%m-%d"),
+            "name": summary_name,
+            "emoji": emoji,
+            "duration": 45  # Replace with actual if you store it
+        })
+
+    return result
 
 #food
 from app.schemas import LogFoodRequest

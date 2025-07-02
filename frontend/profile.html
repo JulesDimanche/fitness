@@ -6,10 +6,19 @@
   <link rel="stylesheet" href="profile.css">
 </head>
 <body>
+  <nav class="navbar">
+  <div class="nav-logo">🏋️ MyGymTracker</div>
+  <ul class="nav-links">
+    <li><a href="/profile.html" class="active">Profile</a></li>
+    <li><a href="/bmi.html">BMI</a></li>
+    <li><a href="/progress.html">Progress</a></li>
+    <li><a href="/calorie_tracker.html">Nutrition</a></li>
+    <li><a href="/workout.html">Workout</a></li>
+    <li><a href="#" id="logout-btn">Logout</a></li>
+  </ul>
+</nav>
   <div class="void-bg"></div>
   <div class="container">
-    <button id="logoutBtn" class="logout-button">Logout</button>
-
     <!-- Top Stats Bar -->
     <header class="top-stats">
       <h1 class="glitch" data-text="PLAYER PROFILE">PLAYER PROFILE</h1>
@@ -28,21 +37,17 @@
         <div class="profile-picture">
           <img src="avatar.png" alt="Avatar">
         </div>
-        <div class="recent-workouts">
-          <h3>Recent Workouts</h3>
-          <ul>
-            <li><span>💪</span> Chest Day - 45 min</li>
-            <li><span>🏋️</span> Leg Day - 50 min</li>
-            <li><span>🏋️</span> Cardio - 30 min</li>
-          </ul>
-        </div>
+        <ul id="recent-workouts">
+  <li>Loading...</li>
+</ul>
+
       </div>
 
       <!-- Right Side -->
       <div class="right-panel">
         <!-- Section 1 -->
         <div class="section">
-          <h2>Name: <span class="neon-text">Sung Jinwoo</span></h2>
+          <h2>Name: <span class="neon-text" id="user-name">Loading...</span></h2>
           <p>Level: <strong>18</strong></p>
           <p>Title: <strong>Shadow Monarch</strong></p>
           <p>Fatigue: <strong>23%</strong></p>
@@ -65,12 +70,6 @@
         </div>
       </div>
     </div>
-    <div class="nav-buttons">
-  <button onclick="location.href='bmi.html'">📏 BMI Analyzer</button>
-  <button onclick="location.href='progress.html'">📊 Progress Tracker</button>
-  <button onclick="location.href='calorie_tracker.html'">🍽️ Calorie Tracker</button>
-  <button onclick="location.href='workout.html'">🏋️ Workout Tracker</button>
-</div>
 
 
   </div>
