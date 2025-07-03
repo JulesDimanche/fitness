@@ -694,14 +694,14 @@ async def delete_exercise(
         raise HTTPException(status_code=404, detail="Exercise not found")
 
     db.delete(exercise)
-    db.commit()
+    #db.commit()
 
     # ✅ Delete session if no exercises remain
     remaining_exercises = db.query(WorkoutExercise).filter_by(session_id=session.id).count()
     if remaining_exercises == 0:
         db.delete(session)
-        db.commit()
-        return {"message": "Exercise and session deleted (no exercises left)"}
+    db.commit()
+        #return {"message": "Exercise and session deleted (no exercises left)"}
 
     return {"message": "Exercise deleted successfully"}
 
@@ -859,36 +859,53 @@ def recent_workouts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    sessions = (
-        db.query(WorkoutSession)
+    # Get latest 3 unique workout days for the user
+    recent_dates = (
+        db.query(func.date(WorkoutSession.date))
         .filter(WorkoutSession.user_id == current_user.id)
         .order_by(WorkoutSession.date.desc())
+        .distinct(func.date(WorkoutSession.date))
         .limit(3)
         .all()
     )
 
     result = []
-    for session in sessions:
-        if not session.exercises:
-            continue
+    for (workout_date,) in recent_dates:
+        # All sessions on that day
+        sessions = (
+            db.query(WorkoutSession)
+            .filter(
+                WorkoutSession.user_id == current_user.id,
+                func.date(WorkoutSession.date) == workout_date
+            )
+            .all()
+        )
 
-        exercise_names = [ex.exercise_name for ex in session.exercises]
-        summary_name = ", ".join(exercise_names[:2])  # Show 2 exercises max
+        day_summary = {
+            "date": str(workout_date),
+            "sessions": []
+        }
 
-        emoji = "🏋️"  # Default
-        if any("Chest" in ex for ex in exercise_names):
-            emoji = "💪"
-        elif any("Cardio" in ex for ex in exercise_names):
-            emoji = "🏃"
-        elif any("Leg" in ex for ex in exercise_names):
-            emoji = "🦵"
+        for session in sessions:
+            exercise_names = [ex.exercise_name for ex in session.exercises]
 
-        result.append({
-            "date": session.date.strftime("%Y-%m-%d"),
-            "name": summary_name,
-            "emoji": emoji,
-            "duration": 45  # Replace with actual if you store it
-        })
+            summary_name = ", ".join(exercise_names[:2]) if exercise_names else "Unknown"
+            emoji = "🏋️"
+            if any("Chest" in ex for ex in exercise_names):
+                emoji = "💪"
+            elif any("Leg" in ex for ex in exercise_names):
+                emoji = "🦵"
+            elif any("Cardio" in ex for ex in exercise_names):
+                emoji = "🏃"
+
+            day_summary["sessions"].append({
+                "name": summary_name,
+                "emoji": emoji,
+                "template": getattr(session, "name", None),  # If session has template name
+                "duration": 45  # Estimated for now
+            })
+
+        result.append(day_summary)
 
     return result
 

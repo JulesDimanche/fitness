@@ -26,18 +26,27 @@ async function loadRecentWorkouts() {
       }
     });
 
-    const workouts = await response.json();
+    const days = await response.json();
     list.innerHTML = "";
 
-    if (workouts.length === 0) {
+    if (days.length === 0) {
       list.innerHTML = "<li>No workouts yet.</li>";
       return;
     }
 
-    workouts.forEach(workout => {
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${workout.emoji}</span> ${workout.name} - ${workout.duration} min`;
-      list.appendChild(li);
+    days.forEach(day => {
+      const header = document.createElement("li");
+      header.innerHTML = `<strong>📅 ${day.date}</strong>`;
+      list.appendChild(header);
+
+      day.sessions.forEach(session => {
+        const li = document.createElement("li");
+        const label = session.template
+          ? `<em>${session.template}</em>`  // Show template if present
+          : `${session.name} - ${session.duration} min`;
+        li.innerHTML = `<span>${session.emoji}</span> ${label}`;
+        list.appendChild(li);
+      });
     });
 
   } catch (err) {
