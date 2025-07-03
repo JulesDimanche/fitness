@@ -1070,6 +1070,8 @@ async function createWorkoutDateButtons() {
       document.querySelectorAll(".date-button").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       selectedWorkoutDate = dateStr;
+      document.getElementById("exercises-container").innerHTML = "";
+      addExercise();
       loadWorkoutsByDate(dateStr);
     });
 
