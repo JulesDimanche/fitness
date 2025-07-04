@@ -14,6 +14,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+async function loadStats() {
+  const token = localStorage.getItem("token");
+  const response = await fetch("http://localhost:8000/user_stats", {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  const stats = await response.json();
+
+  document.querySelector('[data-stat="health"]').textContent = stats.health;
+  document.querySelector('[data-stat="agility"]').textContent = stats.agility;
+  document.querySelector('[data-stat="endurance"]').textContent = stats.endurance;
+  document.querySelector('[data-stat="strength"]').textContent = stats.strength;
+}
+
 async function loadRecentWorkouts() {
   const list = document.getElementById("recent-workouts");
   list.innerHTML = "<li>Loading...</li>";
@@ -57,3 +73,4 @@ async function loadRecentWorkouts() {
 
 // Call it
 loadRecentWorkouts();
+loadStats(); 

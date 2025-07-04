@@ -11,6 +11,16 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class UserStatsResponse(BaseModel):
+    strength: int
+    agility: int
+    health: int
+    endurance: int
+
+    class Config:
+        orm_mode = True
+        
 class ProgressCreate(BaseModel):
     week: int
     weight: float

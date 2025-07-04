@@ -29,7 +29,20 @@ class User(Base):
 
     goals = relationship("Goal", back_populates="user")
     progress = relationship("Progress", back_populates="user")
+    stats = relationship("UserStats", back_populates="user", uselist=False, cascade="all, delete")
 
+class UserStats(Base):
+    __tablename__ = "user_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    
+    strength = Column(Integer, default=100)
+    agility = Column(Integer, default=100)
+    health = Column(Integer, default=100)
+    endurance = Column(Integer, default=100)
+
+    user = relationship("User", back_populates="stats")
 
 class Goal(Base):
     __tablename__ = "goals"

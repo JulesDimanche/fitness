@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-from app.models import UserData, WorkoutTemplate, WorkoutTemplateExercise, WorkoutTemplateSet
+from app.models import UserData, UserStats, WorkoutTemplate, WorkoutTemplateExercise, WorkoutTemplateSet
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import models, schemas, auth
@@ -18,7 +18,7 @@ from app.auth import create_access_token
 from app.auth import hash_password
 from app.models import WorkoutSession, WorkoutExercise, WorkoutSet,Exercise
 from app.food_db import FoodSessionLocal
-from app.schemas import FoodSuggestion,FoodLogUpdate,ExerciseSuggestion, UpdateWorkoutSet
+from app.schemas import FoodSuggestion,FoodLogUpdate,ExerciseSuggestion, UpdateWorkoutSet, UserStatsResponse, WorkoutSessionCreate
 from fastapi import Query
 from sqlalchemy import cast, Date
 from app.exercise_db import ExerciseSessionLocal
@@ -101,6 +101,26 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 # Allow frontend (browser) requests
 init_db()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+@app.post("/register")
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    hashed_pw = auth.hash_password(user.password)
+    db_user = User(username=user.username, email=user.email, hashed_password=hashed_pw)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    # Create initial stats
+    user_stats = UserStats(user_id=db_user.id)
+    db.add(user_stats)
+    db.commit()
+
+    return {"message": "User registered successfully"}
+
 
 @app.post("/analyze")
 def analyze_user(data: UserData):
@@ -369,57 +389,123 @@ def get_weekly_plan(db: Session = Depends(get_db), current_user: User = Depends(
 
 @app.post("/workout_sessions")
 async def create_workout_session(
-    session_data: schemas.WorkoutSessionCreate,
+    session_data: WorkoutSessionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     session_date = session_data.date or datetime.utcnow()
 
     # Create the new workout session
-    new_session = WorkoutSession(
-        user_id=current_user.id,
-        date=session_date
-    )
+    new_session = WorkoutSession(user_id=current_user.id, date=session_date)
+    db.add(new_session)
+    db.flush()  # Get new_session.id before creating children
 
-    # Loop over the exercises in the session data
+    any_progress = False
+
+    # Process exercises
     for exercise_data in session_data.exercises:
-        # Log the exercise data to check if it's correct
-        print("Exercise Data:", exercise_data)
-
-        # Create a new exercise for each exercise
         new_exercise = WorkoutExercise(
-            session_id=new_session.id,  # Link the exercise to the current session
+            session_id=new_session.id,
             exercise_name=exercise_data.exercise_name
         )
+        db.add(new_exercise)
+        db.flush()
 
-        # Log the sets to ensure that set data is present
-        print("Sets Data:", exercise_data.sets)
-
-        # Loop over the sets for each exercise and create new sets
+        # Store new sets
+        new_sets = []
         for set_data in exercise_data.sets:
-            print("Creating Set:", set_data)  # Log each set data
             new_set = WorkoutSet(
-                exercise_id=new_exercise.id,  # Link the set to the current exercise
+                exercise_id=new_exercise.id,
                 set_number=set_data.set_number,
                 reps=set_data.reps,
                 weight=set_data.weight
             )
-            # Append the set to the exercise's sets relationship
-            new_exercise.sets.append(new_set)
+            db.add(new_set)
+            new_sets.append(new_set)
 
-        # Add the new exercise to the workout session's exercises relationship
-        new_session.exercises.append(new_exercise)
+        # Check for progression (vs previous workout for the same exercise)
+        previous_set = (
+            db.query(WorkoutSet)
+            .join(WorkoutExercise)
+            .join(WorkoutSession)
+            .filter(
+                WorkoutExercise.exercise_name == exercise_data.exercise_name,
+                WorkoutSession.user_id == current_user.id,
+                WorkoutSession.id != new_session.id
+            )
+            .order_by(WorkoutSession.date.desc(), WorkoutSet.set_number.desc())
+            .first()
+        )
 
-    # Log the sets to be added to the exercise
-    print("Sets to be added:", new_exercise.sets)
+        if previous_set:
+            for set_data in exercise_data.sets:
+                if (
+                    set_data.reps > previous_set.reps or
+                    set_data.weight > previous_set.weight
+                ):
+                    any_progress = True
+                    break
 
-    # Add the session to the database
-    db.add(new_session)
+    # 📊 Fetch or create UserStats
+    stats = db.query(UserStats).filter(UserStats.user_id == current_user.id).first()
+
+    if not stats:
+        stats = UserStats(
+            user_id=current_user.id,
+            strength=100,
+            agility=100,
+            health=100,
+            endurance=100
+        )
+        db.add(stats)
+    else:
+        # Fix legacy nulls
+        if stats.strength is None:
+            stats.strength = 100
+        if stats.agility is None:
+            stats.agility = 100
+        if stats.health is None:
+            stats.health = 100
+        if stats.endurance is None:
+            stats.endurance = 100
+
+    # 🧠 Stat logic
+    stats.health += 5
+    stats.agility += 3
+    stats.endurance += 5
+
+    # Check if yesterday was missed
+    yesterday = datetime.utcnow().date() - timedelta(days=1)
+    had_workout_yesterday = db.query(WorkoutSession).filter(
+        WorkoutSession.user_id == current_user.id,
+        func.date(WorkoutSession.date) == yesterday
+    ).first()
+
+    if not had_workout_yesterday:
+        stats.endurance = max(0, stats.endurance - 5)
+
+    # Strength logic
+    stats.strength += 5  # base
+    if any_progress:
+        stats.strength += 2  # bonus for improving reps/weight
+
     db.commit()
     db.refresh(new_session)
 
-    return {"message": "Workout session created successfully", "session_id": new_session.id}
-
+    return {
+        "message": "Workout session created successfully",
+        "session_id": new_session.id
+    }
+@app.get("/user_stats", response_model=UserStatsResponse)
+def get_user_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    stats = db.query(UserStats).filter(UserStats.user_id == current_user.id).first()
+    if not stats:
+        raise HTTPException(status_code=404, detail="Stats not found")
+    
+    return stats
 @app.post("/previous_exercise/{exercise_name}")
 async def get_previous_exercise(
     exercise_name: str,
@@ -683,6 +769,7 @@ async def delete_exercise(
     )
     if not session:
         raise HTTPException(status_code=404, detail="Workout session not found")
+    print(f"🧪 Incoming delete request for: {exercise_name=} on {session_date=}")
 
     exercise = (
         db.query(WorkoutExercise)
@@ -694,6 +781,7 @@ async def delete_exercise(
         raise HTTPException(status_code=404, detail="Exercise not found")
 
     db.delete(exercise)
+    db.flush()  
     #db.commit()
 
     # ✅ Delete session if no exercises remain
