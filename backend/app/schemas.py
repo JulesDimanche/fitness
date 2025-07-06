@@ -17,6 +17,8 @@ class UserStatsResponse(BaseModel):
     agility: int
     health: int
     endurance: int
+    current_hp:int
+    current_sp:int
 
     class Config:
         orm_mode = True

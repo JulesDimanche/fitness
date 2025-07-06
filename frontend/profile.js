@@ -28,6 +28,9 @@ async function loadStats() {
   document.querySelector('[data-stat="agility"]').textContent = stats.agility;
   document.querySelector('[data-stat="endurance"]').textContent = stats.endurance;
   document.querySelector('[data-stat="strength"]').textContent = stats.strength;
+  document.getElementById("hp-value").textContent = `${stats.current_hp}/1000`;
+  document.getElementById("sp-value").textContent = `${stats.current_sp}/500`;
+  
 }
 
 async function loadRecentWorkouts() {

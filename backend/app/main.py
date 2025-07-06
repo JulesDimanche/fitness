@@ -455,7 +455,9 @@ async def create_workout_session(
             strength=100,
             agility=100,
             health=100,
-            endurance=100
+            endurance=100,
+            current_hp=800,
+        current_sp=400
         )
         db.add(stats)
     else:
@@ -468,6 +470,10 @@ async def create_workout_session(
             stats.health = 100
         if stats.endurance is None:
             stats.endurance = 100
+        if stats.current_hp is None:
+            stats.current_hp =800
+        if stats.current_sp is None:
+            stats.current_sp =400
 
     # 🧠 Stat logic
     stats.health += 5
@@ -488,6 +494,22 @@ async def create_workout_session(
     stats.strength += 5  # base
     if any_progress:
         stats.strength += 2  # bonus for improving reps/weight
+    # Initialize vitals if needed
+    if stats.current_hp is None:
+        stats.current_hp = 800
+    if stats.current_sp is None:
+        stats.current_sp = 400
+
+    # HP logic
+    stats.current_hp = min(stats.current_hp + 5, 1000)
+    if not had_workout_yesterday:
+        stats.current_hp = max(0, stats.current_hp - 10)
+
+    # SP logic
+    stats.current_sp = max(0, stats.current_sp - 10)
+    if not had_workout_yesterday:
+        stats.current_sp = min(stats.current_sp + 15, 500)
+
 
     db.commit()
     db.refresh(new_session)

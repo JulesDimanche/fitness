@@ -41,6 +41,8 @@ class UserStats(Base):
     agility = Column(Integer, default=100)
     health = Column(Integer, default=100)
     endurance = Column(Integer, default=100)
+    current_hp = Column(Integer, default=800)
+    current_sp = Column(Integer, default=400)
 
     user = relationship("User", back_populates="stats")
 
