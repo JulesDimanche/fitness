@@ -30,12 +30,21 @@ async function loadStats() {
   document.querySelector('[data-stat="strength"]').textContent = stats.strength;
   document.getElementById("hp-value").textContent = `${stats.current_hp}/1000`;
   document.getElementById("sp-value").textContent = `${stats.current_sp}/500`;
+  document.getElementById("hp-bar").style.width = `${(stats.current_hp / 1000) * 100}%`;
+  document.getElementById("sp-bar").style.width = `${(stats.current_sp / 500) * 100}%`;
+  document.getElementById("level-value").textContent = stats.level;
+  document.getElementById("title-value").textContent = stats.title;
+  document.getElementById("fatigue-value").textContent = `${stats.fatigue}%`;
+  
+console.log("Stats received:", stats);
+console.log("Level element:", document.getElementById("level-value"));
+
   
 }
 
 async function loadRecentWorkouts() {
-  const list = document.getElementById("recent-workouts");
-  list.innerHTML = "<li>Loading...</li>";
+  const container = document.getElementById("recent-workouts");
+  container.innerHTML = "<p>Loading...</p>";
 
   try {
     const token = localStorage.getItem("token");
@@ -46,34 +55,41 @@ async function loadRecentWorkouts() {
     });
 
     const days = await response.json();
-    list.innerHTML = "";
+    container.innerHTML = "";
 
     if (days.length === 0) {
-      list.innerHTML = "<li>No workouts yet.</li>";
+      container.innerHTML = "<p>No workouts yet.</p>";
       return;
     }
 
     days.forEach(day => {
-      const header = document.createElement("li");
-      header.innerHTML = `<strong>📅 ${day.date}</strong>`;
-      list.appendChild(header);
+      const dayDiv = document.createElement("div");
+      dayDiv.classList.add("day-log");
+
+      const header = document.createElement("h3");
+      header.innerHTML = `📅 ${day.date}`;
+      dayDiv.appendChild(header);
+
+      const ul = document.createElement("ul");
 
       day.sessions.forEach(session => {
         const li = document.createElement("li");
         const label = session.template
-          ? `<em>${session.template}</em>`  // Show template if present
+          ? `<em>${session.template}</em>`
           : `${session.name} - ${session.duration} min`;
         li.innerHTML = `<span>${session.emoji}</span> ${label}`;
-        list.appendChild(li);
+        ul.appendChild(li);
       });
+
+      dayDiv.appendChild(ul);
+      container.appendChild(dayDiv);
     });
 
   } catch (err) {
     console.error("Failed to load workouts", err);
-    list.innerHTML = "<li>Error loading workouts.</li>";
+    container.innerHTML = "<p>Error loading workouts.</p>";
   }
 }
-
 // Call it
 loadRecentWorkouts();
 loadStats(); 

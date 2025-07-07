@@ -37,37 +37,66 @@
         <div class="profile-picture">
           <img src="avatar.png" alt="Avatar">
         </div>
-        <ul id="recent-workouts">
-  <li>Loading...</li>
-</ul>
+        <div class="workouts-section">
+  <h2>Recent Workouts</h2>
+  <div id="recent-workouts"></div>
+</div>
+
 
       </div>
 
       <!-- Right Side -->
       <div class="right-panel">
         <!-- Section 1 -->
-        <div class="section">
+        <div class="section1">
           <h2>Name: <span class="neon-text" id="user-name">Loading...</span></h2>
-          <p>Level: <strong>18</strong></p>
-          <p>Title: <strong>Shadow Monarch</strong></p>
-          <p>Fatigue: <strong>23%</strong></p>
+          <div class="meta-section">
+  <div class="meta-box">
+    <h3>Level</h3>
+    <p id="level-value">...</p>
+  </div>
+  <div class="meta-box">
+    <h3>Title</h3>
+    <p id="title-value">...</p>
+  </div>
+  <div class="meta-box">
+    <h3>Fatigue</h3>
+    <p id="fatigue-value">...</p>
+  </div>
+</div>
+
+
         </div>
 
         <!-- Section 2 -->
         <div class="section">
-          <h3>Vitals</h3>
-          <p>HP: <strong id="hp-value">...</strong></p>
-          <p>SP: <strong id="sp-value">...</strong></p>
+  <h3>Vitals</h3>
 
-        </div>
+  <div class="vital-row">
+    <label for="hp-bar">❤️ HP:</label>
+    <div class="vital-bar">
+      <div id="hp-bar"></div>
+    </div>
+    <span id="hp-value">...</span>
+  </div>
+
+  <div class="vital-row">
+    <label for="sp-bar">🧠 SP:</label>
+    <div class="vital-bar">
+      <div id="sp-bar"></div>
+    </div>
+    <span id="sp-value">...</span>
+  </div>
+</div>
+
 
         <!-- Section 3 -->
         <div class="section">
           <h3>Stats</h3>
-          <p><span>⚔️</span> Strength: <span data-stat="strength">...</span></p>
-          <p><span>🐼</span> Agility: <span data-stat="agility">...</span></p>
-          <p><span>❤️</span> Health: <span data-stat="health">...</span></p>
-          <p><span>🛡️</span> Endurance: <span data-stat="endurance">...</span></p>
+          <p><span>⚔️</span> Strength <span data-stat="strength">...</span></p>
+          <p><span>🐼</span> Agility <span data-stat="agility">...</span></p>
+          <p><span>❤️</span> Health <span data-stat="health">...</span></p>
+          <p><span>🛡️</span> Endurance <span data-stat="endurance">...</span></p>
 
         </div>
       </div>

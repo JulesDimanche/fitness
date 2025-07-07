@@ -526,8 +526,46 @@ def get_user_stats(
     stats = db.query(UserStats).filter(UserStats.user_id == current_user.id).first()
     if not stats:
         raise HTTPException(status_code=404, detail="Stats not found")
-    
-    return stats
+
+    # Calculate level
+    total = stats.strength + stats.agility + stats.health + stats.endurance
+    level = total // 100  # adjust divisor to scale difficulty
+
+    # Assign title
+    def get_title(lvl):
+        if lvl >= 50:
+            return "Shadow Monarch"
+        elif lvl >= 40:
+            return "Grandmaster"
+        elif lvl >= 30:
+            return "Elite Hunter"
+        elif lvl >= 20:
+            return "Awakened"
+        elif lvl >= 10:
+            return "Apprentice"
+        else:
+            return "Novice"
+
+    title = get_title(level)
+
+    # Calculate fatigue based on HP and SP
+    hp_ratio = (stats.current_hp or 0) / 1000
+    sp_ratio = (stats.current_sp or 0) / 500
+    fatigue = 100 - ((hp_ratio * 50) + (sp_ratio * 50))
+    fatigue = round(fatigue)
+
+    return {
+        "strength": stats.strength,
+        "agility": stats.agility,
+        "health": stats.health,
+        "endurance": stats.endurance,
+        "current_hp": stats.current_hp,
+        "current_sp": stats.current_sp,
+        "level": level,
+        "title": title,
+        "fatigue": fatigue
+    }
+
 @app.post("/previous_exercise/{exercise_name}")
 async def get_previous_exercise(
     exercise_name: str,

@@ -43,6 +43,9 @@ class UserStats(Base):
     endurance = Column(Integer, default=100)
     current_hp = Column(Integer, default=800)
     current_sp = Column(Integer, default=400)
+    level = Column(Integer, default=1)
+    title = Column(String, default="Novice")
+    fatigue = Column(Integer, default=0)
 
     user = relationship("User", back_populates="stats")
 
