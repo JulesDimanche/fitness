@@ -12,7 +12,33 @@ body {
   padding: 0;
   overflow-x: hidden;
 }
+.navbar {
+  background-color: rgba(10, 10, 20, 0.9);
+  padding: 1rem 2rem;
+  z-index: 1000;
+  box-shadow: 0 0 10px var(--neon-blue);
+  display: flex;
+  justify-content: flex-start;
+}
 
+.nav-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nav-link {
+  color: var(--neon-blue);
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--neon-purple);
+  text-shadow: 0 0 8px var(--neon-purple);
+}
 .void-bg {
   position: fixed;
   top: 0;
