@@ -29,9 +29,14 @@
           <div class="form-group">
             <input type="email" name="email" placeholder="Email" required>
           </div>
-          <div class="form-group">
-            <input type="password" name="password" placeholder="Password" required>
+          <div class="form-group password-wrapper" style="position: relative;">
+            <input type="password" id="password" name="password" placeholder="Password" required minlength="6" style="padding-right: 40px;">
+            <span id="togglePassword" class="toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+              👁️
+            </span>
           </div>
+
+
           
           <div class="cta-buttons">
             <button type="submit" class="btn-neon">REGISTER NOW</button>

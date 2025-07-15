@@ -1,36 +1,41 @@
-console.log("register.js loaded");
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-const registerForm = document.getElementById("registerForm");
+  const formData = new FormData(registerForm);
+  const data = Object.fromEntries(formData.entries());
 
-if (registerForm) {
-  console.log("Register form found"); // Add this to check
-  registerForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    console.log("Register form submitted");
-  
-    const formData = new FormData(registerForm);
-    const data = Object.fromEntries(formData.entries());
-    console.log("Sending data:", data); // Log the form data
-  
-    try {
-      const response = await fetch("http://localhost:8000/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-  
-      const result = await response.json();
-      console.log("Response from server:", result); // Log server response
-  
-      if (response.ok) {
-        alert("Registered successfully. Please log in.");
-      } else {
-        alert("Error: " + (result.detail || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("Registration error:", err);
-      alert("Registration failed.");
+  // ✅ Password length check
+  if (data.password.length < 6) {
+    alert("Password must be at least 6 characters long.");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:8000/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert("Registered successfully. Please log in.");
+    } else {
+      alert("Error: " + (result.detail || "Unknown error"));
     }
+  } catch (err) {
+    console.error("Registration error:", err);
+    alert("Registration failed.");
+  }
+});
+const passwordInput = document.getElementById("password");
+const togglePassword = document.getElementById("togglePassword");
+
+if (togglePassword && passwordInput) {
+  togglePassword.addEventListener("click", () => {
+    const isVisible = passwordInput.type === "text";
+    passwordInput.type = isVisible ? "password" : "text";
+    togglePassword.textContent = isVisible ? "👁️" : "🙈"; // You can customize icons here
   });
-  
 }
